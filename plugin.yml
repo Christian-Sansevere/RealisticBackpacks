@@ -1,0 +1,16 @@
+name: RealisticBackpacks
+main: org.fatecrafters.plugins.RealisticBackpacks
+version: 1.0
+author: Slayr288
+website: http://Fatecrafters.org
+description: 'Backpacks, but more real! ;o'
+softdepend: [Vault]
+commands:
+   rb:
+      description: Main commands.
+      aliases: [realisticbackpacks, realb, rbs]
+permissions:
+    rb.reload:
+        default: op
+    rb.list:
+        default: op

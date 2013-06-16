@@ -1,0 +1,34 @@
+Config:
+  MultipleBackpacksInInventory:
+    average: false
+    add: true
+Backpacks:
+  exampleBackpack:
+    Size: 18
+    Purchasable: true
+    Price: 2000
+    UseRecipe: true
+    Recipe:
+      - '334,334,334'
+      - '334,35:12,334'
+      - '334,334,334'
+    BackpackItem:
+      id: '54'
+      name: '&aBackpack'
+      lore:
+        - '&cA container for carrying items.'
+        - '&cTheres a lot of space inside.'
+    onDeath:
+      destroyContents: false
+      dropContents: true
+      destroyBackpack: true
+      dropBackpack: false
+      keepBackpack: false
+    WalkSpeedFeature:
+      enabled: true
+      walkingSpeedMultiplier: 0.19
+    IncreasedHungerFeature:
+      enabled: true
+      extraHungerBarsToDeplete: 1
+      hungerBarsToSubtractWhenEating: 0
+    
