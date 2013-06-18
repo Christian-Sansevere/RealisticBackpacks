@@ -2,6 +2,12 @@ package org.fatecrafters.plugins;
 
 import java.io.File;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,13 +32,17 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class RealisticBackpacks extends JavaPlugin {
 
-	//ToDo:
-	//Pay for backpacks via command, give backpacks via command
-	
 	public static Economy econ = null;
+
 	private boolean vault = true;
 	private static boolean average = false;
 	private static boolean add = false;
+	private boolean exist = false;
+	private boolean usingMysql = false;
+	private String user = null;
+	private String password = null;
+	private String url;
+
 	public static List<String> backpacks = new ArrayList<String>();
 	public static HashMap<String, String> messageData = new HashMap<String, String>();
 	public static HashMap<String,List<String>> backpackData = new HashMap<String,List<String>>();
@@ -61,6 +71,7 @@ public class RealisticBackpacks extends JavaPlugin {
 	@Override
 	public void onEnable() { 
 		saveDefaultConfig();
+		MysqlFunctions.setPlugin(this);
 		getServer().getPluginManager().registerEvents(new RBListener(this), this);
 		if (!setupEconomy()) {
 			getLogger().info("Vault not found, economy features disabled.");
@@ -83,6 +94,14 @@ public class RealisticBackpacks extends JavaPlugin {
 		setMessage("playerDoesNotExist", "&cThe player does not exist or is offline.");
 		setMessage("noPermission", "&cYou do not have permission.");
 		setMessage("notPurchasable", "&cYou can not purchase this backpack.");
+		setConfig("Data.FileSystem", "flatfile");
+		setConfig("Data.MySQL.database", "minecraft");
+		setConfig("Data.MySQL.username", "user");
+		setConfig("Data.MySQL.password", "pass");
+		setConfig("Data.MySQL.ip", "localhost");
+		setConfig("Data.MySQL.port", 3306);
+		saveConfig();
+		reloadConfig();
 		setupLists();
 		File userdata = new File(getDataFolder()+File.separator+"userdata");
 		if (!userdata.exists()) {
@@ -100,7 +119,7 @@ public class RealisticBackpacks extends JavaPlugin {
 	}
 
 	@SuppressWarnings("deprecation")
-	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+	public boolean onCommand(final CommandSender sender, Command cmd, String label, String[] args) {
 		if(cmd.getName().equalsIgnoreCase("rb")) {
 			if (args.length >= 1) {
 				if (args[0].equalsIgnoreCase("reload")) {
@@ -203,12 +222,64 @@ public class RealisticBackpacks extends JavaPlugin {
 						sender.sendMessage(ChatColor.RED + "Your inventory is full.");
 						return false;
 					}
+				} else if (args[0].equalsIgnoreCase("filetomysql")) {
+					if (!sender.hasPermission("rb.filetomysql")) {
+						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', messageData.get("noPermission")));
+						return false;
+					}
+					if (!MysqlFunctions.checkIfTableExists("rb_data")) {
+						MysqlFunctions.createTables();
+						exist = false;
+					} else {
+						exist = true;
+					}
+					getServer().getScheduler().runTaskAsynchronously(this, new Runnable() {
+						public void run() {
+							try {
+								Connection conn = DriverManager.getConnection(url, user, password);
+								File dir = new File(getDataFolder()+File.separator+"userdata");
+								int i = 0, times = 0, files = dir.listFiles().length;
+								for (File child : dir.listFiles()) {
+									FileConfiguration config = YamlConfiguration.loadConfiguration(child);
+									String player = child.getName().replace(".yml", "");
+									i++;
+									Statement statement = conn.createStatement();
+									PreparedStatement state = null;
+									for (String backpack : config.getConfigurationSection("").getKeys(false)) {
+										if (exist) {
+											ResultSet res = statement.executeQuery("SELECT EXISTS(SELECT 1 FROM rb_data WHERE player = '"+player+"' AND backpack = '"+backpack+"' LIMIT 1);");
+											if (res.next()) {
+												if (res.getInt(1) == 1) {
+													state = conn.prepareStatement("UPDATE rb_data SET player='"+player+"', backpack='"+backpack+"', inventory='"+config.getString(backpack+".Inventory")+"' WHERE player='"+player+"' AND backpack='"+backpack+"';");
+												} else {
+													state = conn.prepareStatement("INSERT INTO rb_data (player, backpack, inventory) VALUES('"+player+"', '"+backpack+"', '"+config.getString(backpack+".Inventory")+"' );");
+												}
+											}
+										} else {
+											state = conn.prepareStatement("INSERT INTO rb_data (player, backpack, inventory) VALUES('"+player+"', '"+backpack+"', '"+config.getString(backpack+".Inventory")+"' );");
+										}
+										state.executeUpdate();
+										state.close();
+									}
+									if (i == 100) {
+										i = 0;
+										times++;
+										sender.sendMessage(ChatColor.LIGHT_PURPLE+""+times*100+"/"+files+" files have been transferred.");
+									}
+								}
+								conn.close();
+								sender.sendMessage(ChatColor.LIGHT_PURPLE+"File transfer complete.");
+							} catch (SQLException e) {
+								e.printStackTrace();
+							}
+						}
+					});
 				}
 			}
 		}
 		return false;
 	}
-	
+
 	private boolean setupEconomy() {
 		if (getServer().getPluginManager().getPlugin("Vault") == null) {
 			return false;
@@ -220,7 +291,7 @@ public class RealisticBackpacks extends JavaPlugin {
 		econ = rsp.getProvider();
 		return econ != null;
 	}
-	
+
 	private void setMessage(String name, String message) {
 		File f = new File(getDataFolder()+File.separator+"messages.yml");
 		FileConfiguration config = YamlConfiguration.loadConfiguration(f);
@@ -234,6 +305,12 @@ public class RealisticBackpacks extends JavaPlugin {
 		}
 	}
 	
+	private void setConfig(String path, Object set) {
+		if (!getConfig().isSet(path)) {
+			getConfig().set(path, set);
+		}
+	}
+
 	private void setupLists() {
 		backpacks.clear();
 		backpackRecipe.clear();
@@ -261,7 +338,7 @@ public class RealisticBackpacks extends JavaPlugin {
 			list.add(6, getConfig().getString("Backpacks."+backpack+".onDeath.dropBackpack"));
 			list.add(7, getConfig().getString("Backpacks."+backpack+".onDeath.keepBackpack"));
 			list.add(8, getConfig().getString("Backpacks."+backpack+".WalkSpeedFeature.enabled"));
-			list.add(9, getConfig().getString("Backpacks."+backpack+".WalkSpeedFeature.walkingSpeedMultiplier"));
+			list.add(9, getConfig().getString("Backpacks."+backpack+".WalkSpeedFeature.walkingSpeed"));
 			list.add(10, getConfig().getString("Backpacks."+backpack+".IncreasedHungerFeature.enabled"));
 			list.add(11, getConfig().getString("Backpacks."+backpack+".IncreasedHungerFeature.extraHungerBarsToDeplete"));
 			list.add(12, getConfig().getString("Backpacks."+backpack+".IncreasedHungerFeature.hungerBarsToSubtractWhenEating"));
@@ -277,6 +354,9 @@ public class RealisticBackpacks extends JavaPlugin {
 	}
 
 	private void setup() {
+		user = getConfig().getString("Data.MySQL.username");
+		password = getConfig().getString("Data.MySQL.password");
+		url = "jdbc:mysql://"+getConfig().getString("Data.MySQL.ip")+":"+getConfig().getInt("Data.MySQL.port")+"/"+getConfig().getString("Data.MySQL.database");
 		if (!getConfig().isSet("Config.MultipleBackpacksInInventory.average")) {
 			average = false;
 		} else {
@@ -286,6 +366,16 @@ public class RealisticBackpacks extends JavaPlugin {
 			add = false;
 		} else {
 			add = getConfig().getBoolean("Config.MultipleBackpacksInInventory.add");
+		}
+		if (!getConfig().isSet("Data.FileSystem")) {
+			usingMysql = false;
+		} else if (getConfig().getString("Data.FileSystem").equalsIgnoreCase("mysql") || getConfig().getString("Data.FileSystem").equalsIgnoreCase("sql")) {
+			usingMysql = true;
+			if (!MysqlFunctions.checkIfTableExists("rb_data")) {
+				MysqlFunctions.createTables();
+			}
+		} else {
+			usingMysql = false;
 		}
 		for (String backpack : backpacks) {			
 			List<String> key = backpackData.get(backpack);
@@ -343,7 +433,7 @@ public class RealisticBackpacks extends JavaPlugin {
 			}
 		}
 	}
-	
+
 	public ItemStack getConfigLore(ItemStack item, String backpack) {
 		List<String> key = backpackData.get(backpack);
 		ItemMeta meta = item.getItemMeta();
@@ -359,13 +449,29 @@ public class RealisticBackpacks extends JavaPlugin {
 		item.setItemMeta(meta);
 		return item;
 	}
-	
-	public static boolean isAveraging() {
+
+	public boolean isAveraging() {
 		return average;
 	}
 
-	public static boolean isAdding() {
+	public boolean isAdding() {
 		return add;
+	}
+
+	public boolean isUsingMysql() {
+		return usingMysql;
+	}
+
+	public String getUser() {
+		return user;
+	}
+
+	public String getPass() {
+		return password;
+	}
+
+	public String getUrl() {
+		return url;
 	}
 
 }

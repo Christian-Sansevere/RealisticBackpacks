@@ -1,3 +1,11 @@
+Data:
+  FileSystem: flatfile
+  MySQL:
+    database: minecraft
+    username: user
+    password: pass
+    ip: localhost
+    port: 3306
 Config:
   MultipleBackpacksInInventory:
     average: false
@@ -19,14 +27,13 @@ Backpacks:
         - '&cA container for carrying items.'
         - '&cTheres a lot of space inside.'
     onDeath:
-      destroyContents: false
       dropContents: true
-      destroyBackpack: true
+      destroyContents: true
       dropBackpack: false
       keepBackpack: false
     WalkSpeedFeature:
       enabled: true
-      walkingSpeedMultiplier: 0.19
+      walkingSpeed: 0.19
     IncreasedHungerFeature:
       enabled: true
       extraHungerBarsToDeplete: 1

@@ -1,6 +1,6 @@
 name: RealisticBackpacks
 main: org.fatecrafters.plugins.RealisticBackpacks
-version: 1.0
+version: 1.1
 author: Slayr288
 website: http://Fatecrafters.org
 description: 'Backpacks, but more real! ;o'
@@ -13,4 +13,6 @@ permissions:
     rb.reload:
         default: op
     rb.list:
+        default: op
+    rb.filetomysql:
         default: op

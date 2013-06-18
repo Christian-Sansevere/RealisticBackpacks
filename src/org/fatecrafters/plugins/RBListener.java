@@ -2,6 +2,7 @@ package org.fatecrafters.plugins;
 
 import java.io.File;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -57,37 +58,45 @@ public class RBListener implements Listener {
 	 * 10 = increasedHungerEnabled
 	 * 11 = hungerBarsToDeplete
 	 * 12 = hungerBarsToSubtractWhenEating
+	 * 13 = Purchasable
+	 * 14 = Price
 	 */
-
-	//Create a messages file
-	//Add messages on backpack event cancels
 
 	@SuppressWarnings("deprecation")
 	@EventHandler(priority = EventPriority.NORMAL)
 	public void onRightClick(PlayerInteractEvent e) {;
-		Action act = e.getAction();
-		if (!act.equals(Action.LEFT_CLICK_AIR) || !act.equals(Action.LEFT_CLICK_BLOCK)) {
-			Player p = e.getPlayer();
-			ItemStack item = p.getItemInHand();
-			String name = p.getName();
-			if (item.hasItemMeta()) {
-				for (String backpack : RealisticBackpacks.backpacks) {
-					if (!p.hasPermission("rb."+backpack+".use")) {
-						p.sendMessage(ChatColor.translateAlternateColorCodes('&', RealisticBackpacks.messageData.get("openBackpackPermError")));
-						continue;
+	Action act = e.getAction();
+	if (!act.equals(Action.LEFT_CLICK_AIR) || !act.equals(Action.LEFT_CLICK_BLOCK)) {
+		Player p = e.getPlayer();
+		ItemStack item = p.getItemInHand();
+		String name = p.getName();
+		if (item.hasItemMeta()) {
+			for (String backpack : RealisticBackpacks.backpacks) {
+				if (!p.hasPermission("rb."+backpack+".use")) {
+					p.sendMessage(ChatColor.translateAlternateColorCodes('&', RealisticBackpacks.messageData.get("openBackpackPermError")));
+					continue;
+				}
+				List<String> key = RealisticBackpacks.backpackData.get(backpack);
+				if (item.getItemMeta().getDisplayName().equals(ChatColor.translateAlternateColorCodes('&', key.get(3)))) { 
+					if (act.equals(Action.RIGHT_CLICK_BLOCK)) {
+						e.setCancelled(true);
+						p.updateInventory();
 					}
-					List<String> key = RealisticBackpacks.backpackData.get(backpack);
-					if (item.getItemMeta().getDisplayName().equals(ChatColor.translateAlternateColorCodes('&', key.get(3)))) { 
-						if (act.equals(Action.RIGHT_CLICK_BLOCK)) {
-							e.setCancelled(true);
-							p.updateInventory();
+					Inventory inv = null;
+					if (plugin.isUsingMysql()) {
+						try {
+							inv = MysqlFunctions.getBackpackInv(name, backpack);
+						} catch (SQLException e1) {
+							e1.printStackTrace();
 						}
-						Inventory inv = null;
+						if (inv == null) {
+							inv = plugin.getServer().createInventory(p, Integer.parseInt(key.get(0)), key.get(3));
+						}
+					} else {
 						File file = new File(plugin.getDataFolder()+File.separator+"userdata"+File.separator+name+".yml");
 						if (!file.exists()) {
 							try {
 								file.createNewFile();
-								inv = plugin.getServer().createInventory(p, Integer.parseInt(key.get(0)), key.get(3));
 							} catch (IOException e1) {
 								e1.printStackTrace();
 							}
@@ -98,12 +107,13 @@ public class RBListener implements Listener {
 						} else {
 							inv = InventoryHandler.StringToInventory(config.getString(backpack+".Inventory"), key.get(3));
 						}
-						p.openInventory(inv);
-						playerData.put(name, backpack);
 					}
+					playerData.put(name, backpack);
+					p.openInventory(inv);
 				}
 			}
 		}
+	}
 	}
 
 	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
@@ -113,14 +123,22 @@ public class RBListener implements Listener {
 			final Inventory inv = e.getInventory();
 			plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
 				public void run() {
-					String invString = InventoryHandler.InventoryToString(inv);
-					File file = new File(plugin.getDataFolder()+File.separator+"userdata"+File.separator+name+".yml");
-					FileConfiguration config = YamlConfiguration.loadConfiguration(file);
-					config.set(playerData.get(name)+".Inventory", invString);
-					try {
-						config.save(file);
-					} catch (IOException e) {
-						e.printStackTrace();
+					if (plugin.isUsingMysql()) {
+						try {
+							MysqlFunctions.addBackpackData(name, playerData.get(name), inv);
+						} catch (SQLException e) {
+							e.printStackTrace();
+						}
+					} else {
+						String invString = InventoryHandler.InventoryToString(inv);
+						File file = new File(plugin.getDataFolder()+File.separator+"userdata"+File.separator+name+".yml");
+						FileConfiguration config = YamlConfiguration.loadConfiguration(file);
+						config.set(playerData.get(name)+".Inventory", invString);
+						try {
+							config.save(file);
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
 					}
 					playerData.remove(name);
 				}
@@ -134,6 +152,8 @@ public class RBListener implements Listener {
 		if (result.hasItemMeta()) {
 			for (String backpack : RealisticBackpacks.backpacks) {
 				List<String> key = RealisticBackpacks.backpackData.get(backpack);
+				if (!result.hasItemMeta()) 
+					continue;
 				if (!result.getItemMeta().getDisplayName().equals(ChatColor.translateAlternateColorCodes('&', key.get(3)))) 
 					continue;
 				HumanEntity human = e.getView().getPlayer();
@@ -160,18 +180,29 @@ public class RBListener implements Listener {
 			List<String> key = RealisticBackpacks.backpackData.get(backpack);
 			if (key.get(5) != null && key.get(5).equalsIgnoreCase("true")) {
 				//Drop contents
-				File file = new File(plugin.getDataFolder()+File.separator+"userdata"+File.separator+name+".yml");
-				if (!file.exists()) {
-					continue;
+				Inventory binv = null;
+				if (plugin.isUsingMysql()) {
+					try {
+						binv = MysqlFunctions.getBackpackInv(name, backpack);
+					} catch (SQLException e1) {
+						e1.printStackTrace();
+					}
+				} else {
+					File file = new File(plugin.getDataFolder()+File.separator+"userdata"+File.separator+name+".yml");
+					if (!file.exists()) {
+						continue;
+					}
+					FileConfiguration config = YamlConfiguration.loadConfiguration(file);
+					if (config.getString(backpack+".Inventory") == null) {
+						continue;
+					}
+					binv = InventoryHandler.StringToInventory(config.getString(backpack+".Inventory"), key.get(3));
 				}
-				FileConfiguration config = YamlConfiguration.loadConfiguration(file);
-				if (config.getString(backpack+".Inventory") == null) {
-					continue;
-				}
-				Inventory binv = InventoryHandler.StringToInventory(config.getString(backpack+".Inventory"), key.get(3));
-				for (ItemStack item : binv.getContents()) {
-					if (item != null) {
-						p.getWorld().dropItemNaturally(p.getLocation(), item);
+				if (binv != null) {
+					for (ItemStack item : binv.getContents()) {
+						if (item != null) {
+							p.getWorld().dropItemNaturally(p.getLocation(), item);
+						}
 					}
 				}
 			}
@@ -223,13 +254,13 @@ public class RBListener implements Listener {
 				int listsize = backpackList.size();
 				if (listsize > 0) {
 					if (listsize > 1) {
-						if (RealisticBackpacks.isAveraging()) {
+						if (plugin.isAveraging()) {
 							float average = 0;
 							for (String backpack : backpackList) {
 								average += Float.parseFloat(RealisticBackpacks.backpackData.get(backpack).get(9));
 							}
 							walkSpeedMultiplier = average / listsize;
-						} else if (RealisticBackpacks.isAdding()) {
+						} else if (plugin.isAdding()) {
 							float sum = 0;
 							for (String backpack : backpackList) {
 								sum += 0.2F - Float.parseFloat(RealisticBackpacks.backpackData.get(backpack).get(9));
@@ -379,13 +410,13 @@ public class RBListener implements Listener {
 	private int getFoodLevel(int foodlevel, int pLevel, int listsize, int key, List<String> backpackList) {
 		int i = 0;
 		//Starving
-		if (RealisticBackpacks.isAveraging()) {
+		if (plugin.isAveraging()) {
 			int average = 0;
 			for (String backpack : backpackList) {
 				average += Integer.parseInt(RealisticBackpacks.backpackData.get(backpack).get(key));
 			}
 			i = foodlevel - (average / listsize);
-		} else if (RealisticBackpacks.isAdding()) {
+		} else if (plugin.isAdding()) {
 			int sum = 0;
 			for (String backpack : backpackList) {
 				sum += Integer.parseInt(RealisticBackpacks.backpackData.get(backpack).get(key));
@@ -404,13 +435,17 @@ public class RBListener implements Listener {
 	private void destroyContents(final String backpack, final String name) {
 		plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
 			public void run() {
-				File file = new File(plugin.getDataFolder()+File.separator+"userdata"+File.separator+name+".yml");
-				FileConfiguration config = YamlConfiguration.loadConfiguration(file);
-				config.set(backpack+".Inventory", null);
-				try {
-					config.save(file);
-				} catch (IOException e1) {
-					e1.printStackTrace();
+				if (plugin.isUsingMysql()) {
+					MysqlFunctions.delete(name, backpack);
+				} else {
+					File file = new File(plugin.getDataFolder()+File.separator+"userdata"+File.separator+name+".yml");
+					FileConfiguration config = YamlConfiguration.loadConfiguration(file);
+					config.set(backpack+".Inventory", null);
+					try {
+						config.save(file);
+					} catch (IOException e1) {
+						e1.printStackTrace();
+					}
 				}
 			}
 		});
