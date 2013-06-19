@@ -71,12 +71,12 @@ public class RBListener implements Listener {
 		ItemStack item = p.getItemInHand();
 		String name = p.getName();
 		if (item.hasItemMeta()) {
-			for (String backpack : RealisticBackpacks.backpacks) {
+			for (String backpack : plugin.backpacks) {
 				if (!p.hasPermission("rb."+backpack+".use")) {
-					p.sendMessage(ChatColor.translateAlternateColorCodes('&', RealisticBackpacks.messageData.get("openBackpackPermError")));
+					p.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("openBackpackPermError")));
 					continue;
 				}
-				List<String> key = RealisticBackpacks.backpackData.get(backpack);
+				List<String> key = plugin.backpackData.get(backpack);
 				if (item.getItemMeta().getDisplayName().equals(ChatColor.translateAlternateColorCodes('&', key.get(3)))) { 
 					if (act.equals(Action.RIGHT_CLICK_BLOCK)) {
 						e.setCancelled(true);
@@ -90,7 +90,7 @@ public class RBListener implements Listener {
 							e1.printStackTrace();
 						}
 						if (inv == null) {
-							inv = plugin.getServer().createInventory(p, Integer.parseInt(key.get(0)), key.get(3));
+							inv = plugin.getServer().createInventory(p, Integer.parseInt(key.get(0)), ChatColor.translateAlternateColorCodes('&', key.get(3)));
 						}
 					} else {
 						File file = new File(plugin.getDataFolder()+File.separator+"userdata"+File.separator+name+".yml");
@@ -103,9 +103,9 @@ public class RBListener implements Listener {
 						}
 						FileConfiguration config = YamlConfiguration.loadConfiguration(file);
 						if (config.getString(backpack+".Inventory") == null) {
-							inv = plugin.getServer().createInventory(p, Integer.parseInt(key.get(0)), key.get(3));
+							inv = plugin.getServer().createInventory(p, Integer.parseInt(key.get(0)), ChatColor.translateAlternateColorCodes('&', key.get(3)));
 						} else {
-							inv = InventoryHandler.StringToInventory(config.getString(backpack+".Inventory"), key.get(3));
+							inv = InventoryHandler.stringToInventory(config.getString(backpack+".Inventory"), key.get(3));
 						}
 					}
 					playerData.put(name, backpack);
@@ -130,7 +130,7 @@ public class RBListener implements Listener {
 							e.printStackTrace();
 						}
 					} else {
-						String invString = InventoryHandler.InventoryToString(inv);
+						String invString = InventoryHandler.inventoryToString(inv);
 						File file = new File(plugin.getDataFolder()+File.separator+"userdata"+File.separator+name+".yml");
 						FileConfiguration config = YamlConfiguration.loadConfiguration(file);
 						config.set(playerData.get(name)+".Inventory", invString);
@@ -150,8 +150,8 @@ public class RBListener implements Listener {
 	public void onCraft(PrepareItemCraftEvent e) {
 		ItemStack result = e.getInventory().getResult();
 		if (result.hasItemMeta()) {
-			for (String backpack : RealisticBackpacks.backpacks) {
-				List<String> key = RealisticBackpacks.backpackData.get(backpack);
+			for (String backpack : plugin.backpacks) {
+				List<String> key = plugin.backpackData.get(backpack);
 				if (!result.hasItemMeta()) 
 					continue;
 				if (!result.getItemMeta().getDisplayName().equals(ChatColor.translateAlternateColorCodes('&', key.get(3)))) 
@@ -161,7 +161,7 @@ public class RBListener implements Listener {
 					continue;
 				if (!human.hasPermission("rb."+backpack+".craft")) { 
 					e.getInventory().setResult(null);
-					((Player)human).sendMessage(ChatColor.translateAlternateColorCodes('&', RealisticBackpacks.messageData.get("craftPermError")));
+					((Player)human).sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("craftPermError")));
 				}
 			}
 		}
@@ -171,13 +171,13 @@ public class RBListener implements Listener {
 	public void onDeath(PlayerDeathEvent e) {
 		Player p = e.getEntity();
 		String name = p.getName();
-		for (String backpack : RealisticBackpacks.backpacks) {
+		for (String backpack : plugin.backpacks) {
 			if (p.hasPermission("rb."+backpack+".deathbypass"))
 				continue;
-			if (!p.getInventory().contains(RealisticBackpacks.backpackItems.get(backpack)))
+			if (!p.getInventory().contains(plugin.backpackItems.get(backpack)))
 				continue;
 			p.setWalkSpeed(0.2F);
-			List<String> key = RealisticBackpacks.backpackData.get(backpack);
+			List<String> key = plugin.backpackData.get(backpack);
 			if (key.get(5) != null && key.get(5).equalsIgnoreCase("true")) {
 				//Drop contents
 				Inventory binv = null;
@@ -196,7 +196,7 @@ public class RBListener implements Listener {
 					if (config.getString(backpack+".Inventory") == null) {
 						continue;
 					}
-					binv = InventoryHandler.StringToInventory(config.getString(backpack+".Inventory"), key.get(3));
+					binv = InventoryHandler.stringToInventory(config.getString(backpack+".Inventory"), key.get(3));
 				}
 				if (binv != null) {
 					for (ItemStack item : binv.getContents()) {
@@ -209,11 +209,11 @@ public class RBListener implements Listener {
 			if (key.get(4) != null && key.get(4).equalsIgnoreCase("true")) {
 				//Destroy contents
 				destroyContents(backpack, name);
-				p.sendMessage(ChatColor.translateAlternateColorCodes('&', RealisticBackpacks.messageData.get("contentsDestroyed")));
+				p.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("contentsDestroyed")));
 			}
 			if (key.get(6) != null && key.get(6).equalsIgnoreCase("false")) {
 				//Drop backpack
-				e.getDrops().remove(RealisticBackpacks.backpackItems.get(backpack));
+				e.getDrops().remove(plugin.backpackItems.get(backpack));
 			}
 			if (key.get(7) != null && key.get(7).equalsIgnoreCase("true")) {
 				deadPlayers.put(name, backpack);
@@ -226,11 +226,11 @@ public class RBListener implements Listener {
 	public void onRespawn(PlayerRespawnEvent e) {
 		Player p = e.getPlayer();
 		String name = p.getName();
-		for (String backpack : RealisticBackpacks.backpacks) {
-			List<String> key = RealisticBackpacks.backpackData.get(backpack);
+		for (String backpack : plugin.backpacks) {
+			List<String> key = plugin.backpackData.get(backpack);
 			if (key.get(7) != null && key.get(7).equalsIgnoreCase("true") && deadPlayers.get(name) != null && deadPlayers.get(name).equals(backpack)) {
 				//Keep backpack
-				p.getInventory().addItem(RealisticBackpacks.backpackItems.get(backpack));
+				p.getInventory().addItem(plugin.backpackItems.get(backpack));
 				p.updateInventory();
 				deadPlayers.remove(name);
 			}
@@ -245,9 +245,9 @@ public class RBListener implements Listener {
 		plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
 			public void run() {
 				List<String> backpackList = new ArrayList<String>();
-				for (String backpack : RealisticBackpacks.backpacks) {
-					List<String> key = RealisticBackpacks.backpackData.get(backpack);
-					if (key.get(8).equalsIgnoreCase("true") && inv.contains(RealisticBackpacks.backpackItems.get(backpack))) {
+				for (String backpack : plugin.backpacks) {
+					List<String> key = plugin.backpackData.get(backpack);
+					if (key.get(8).equalsIgnoreCase("true") && inv.contains(plugin.backpackItems.get(backpack))) {
 						backpackList.add(backpack);
 					}
 				}
@@ -257,24 +257,26 @@ public class RBListener implements Listener {
 						if (plugin.isAveraging()) {
 							float average = 0;
 							for (String backpack : backpackList) {
-								average += Float.parseFloat(RealisticBackpacks.backpackData.get(backpack).get(9));
+								average += Float.parseFloat(plugin.backpackData.get(backpack).get(9));
 							}
 							walkSpeedMultiplier = average / listsize;
 						} else if (plugin.isAdding()) {
 							float sum = 0;
 							for (String backpack : backpackList) {
-								sum += 0.2F - Float.parseFloat(RealisticBackpacks.backpackData.get(backpack).get(9));
+								sum += 0.2F - Float.parseFloat(plugin.backpackData.get(backpack).get(9));
 							}
 							walkSpeedMultiplier = 0.2F - sum;
 						} else {
 							List<Float> floatList = new ArrayList<Float>();
 							for (String backpack : backpackList) {
-								floatList.add(Float.parseFloat(RealisticBackpacks.backpackData.get(backpack).get(9)));
+								floatList.add(Float.parseFloat(plugin.backpackData.get(backpack).get(9)));
 							}
 							walkSpeedMultiplier = Collections.max(floatList);
 						}
 					} else if (listsize == 1) {
-						walkSpeedMultiplier = Float.parseFloat(RealisticBackpacks.backpackData.get(backpackList.get(0)).get(9));
+						for (String backpack : backpackList) {
+							walkSpeedMultiplier = Float.parseFloat(plugin.backpackData.get(backpack).get(9));
+						}
 					}
 					if (!slowedPlayers.contains(name)) {
 						slowedPlayers.add(name);
@@ -297,8 +299,8 @@ public class RBListener implements Listener {
 		plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
 			public void run() {
 				if (slowedPlayers.contains(name)) {
-					for (String backpack : RealisticBackpacks.backpacks) {
-						if (RealisticBackpacks.backpackItems.get(backpack).equals(item)) {
+					for (String backpack : plugin.backpacks) {
+						if (plugin.backpackItems.get(backpack).equals(item)) {
 							slowedPlayers.remove(name);
 							plugin.getServer().getScheduler().runTask(plugin, new Runnable() {
 								public void run() {
@@ -319,9 +321,9 @@ public class RBListener implements Listener {
 		final String name = p.getName();
 		plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
 			public void run() {
-				for (String backpack : RealisticBackpacks.backpacks) {
-					if (!item.equals(RealisticBackpacks.backpackItems.get(backpack))) continue;
-					final List<String> key = RealisticBackpacks.backpackData.get(backpack);
+				for (String backpack : plugin.backpacks) {
+					if (!item.equals(plugin.backpackItems.get(backpack))) continue;
+					final List<String> key = plugin.backpackData.get(backpack);
 					if (!slowedPlayers.contains(name)) {
 						slowedPlayers.add(name);
 					}
@@ -345,8 +347,8 @@ public class RBListener implements Listener {
 				plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
 					public void run() {
 						if (slowedPlayers.contains(p.getName())) {
-							for (String backpack : RealisticBackpacks.backpacks) {
-								ItemStack backpackItem = RealisticBackpacks.backpackItems.get(backpack);
+							for (String backpack : plugin.backpacks) {
+								ItemStack backpackItem = plugin.backpackItems.get(backpack);
 								if (!curItem.equals(backpackItem)) continue;
 								if (!inv.contains(backpackItem)) {
 									slowedPlayers.remove(p.getName());
@@ -374,10 +376,10 @@ public class RBListener implements Listener {
 			plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
 				public void run() {
 					List<String> backpackList = new ArrayList<String>();
-					for (String backpack : RealisticBackpacks.backpacks) {
-						List<String> key = RealisticBackpacks.backpackData.get(backpack);
+					for (String backpack : plugin.backpacks) {
+						List<String> key = plugin.backpackData.get(backpack);
 						if (!key.get(10).equalsIgnoreCase("true")) continue;
-						if (!inv.contains(RealisticBackpacks.backpackItems.get(backpack))) continue;
+						if (!inv.contains(plugin.backpackItems.get(backpack))) continue;
 						backpackList.add(backpack);
 					}
 					int listsize = backpackList.size();
@@ -413,19 +415,19 @@ public class RBListener implements Listener {
 		if (plugin.isAveraging()) {
 			int average = 0;
 			for (String backpack : backpackList) {
-				average += Integer.parseInt(RealisticBackpacks.backpackData.get(backpack).get(key));
+				average += Integer.parseInt(plugin.backpackData.get(backpack).get(key));
 			}
 			i = foodlevel - (average / listsize);
 		} else if (plugin.isAdding()) {
 			int sum = 0;
 			for (String backpack : backpackList) {
-				sum += Integer.parseInt(RealisticBackpacks.backpackData.get(backpack).get(key));
+				sum += Integer.parseInt(plugin.backpackData.get(backpack).get(key));
 			}
 			i = foodlevel - sum;
 		} else {
 			List<Integer> list = new ArrayList<Integer>();
 			for (String backpack : backpackList) {
-				list.add(Integer.parseInt(RealisticBackpacks.backpackData.get(backpack).get(key)));
+				list.add(Integer.parseInt(plugin.backpackData.get(backpack).get(key)));
 			}
 			i = foodlevel - Collections.max(list);
 		}

@@ -43,12 +43,12 @@ public class RealisticBackpacks extends JavaPlugin {
 	private String password = null;
 	private String url;
 
-	public static List<String> backpacks = new ArrayList<String>();
-	public static HashMap<String, String> messageData = new HashMap<String, String>();
-	public static HashMap<String,List<String>> backpackData = new HashMap<String,List<String>>();
-	public static HashMap<String,List<String>> backpackLore = new HashMap<String,List<String>>();
-	public static HashMap<String,List<String>> backpackRecipe = new HashMap<String,List<String>>();
-	public static HashMap<String,ItemStack> backpackItems = new HashMap<String,ItemStack>();
+	public List<String> backpacks = new ArrayList<String>();
+	public HashMap<String, String> messageData = new HashMap<String, String>();
+	public HashMap<String,List<String>> backpackData = new HashMap<String,List<String>>();
+	public HashMap<String,List<String>> backpackLore = new HashMap<String,List<String>>();
+	public HashMap<String,List<String>> backpackRecipe = new HashMap<String,List<String>>();
+	public HashMap<String,ItemStack> backpackItems = new HashMap<String,ItemStack>();
 
 	/*List key ---------
 	 * 0 = Size

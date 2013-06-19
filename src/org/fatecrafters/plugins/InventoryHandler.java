@@ -1,103 +1,68 @@
 package org.fatecrafters.plugins;
 
-import java.util.Map;
-import java.util.Map.Entry;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.math.BigInteger;
 
-import org.bukkit.Bukkit;
+import net.minecraft.server.v1_5_R3.NBTBase;
+import net.minecraft.server.v1_5_R3.NBTTagCompound;
+import net.minecraft.server.v1_5_R3.NBTTagList;
+
 import org.bukkit.ChatColor;
-import org.bukkit.Material;
-import org.bukkit.enchantments.Enchantment;
+import org.bukkit.craftbukkit.v1_5_R3.inventory.CraftInventoryCustom;
+import org.bukkit.craftbukkit.v1_5_R3.inventory.CraftItemStack;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 public class InventoryHandler {
+	
+	// Pulled from resources section, minor edits made
 
-	// Credit to Phil2812
-
-	public static String InventoryToString (Inventory invInventory)
-	{
-		String serialization = invInventory.getSize() + ";";
-		for (int i = 0; i < invInventory.getSize(); i++)
-		{
-			ItemStack is = invInventory.getItem(i);
-			if (is != null)
-			{
-				String serializedItemStack = new String();
-
-				String isType = String.valueOf(is.getType().getId());
-				serializedItemStack += "t@" + isType;
-
-				if (is.getDurability() != 0)
-				{
-					String isDurability = String.valueOf(is.getDurability());
-					serializedItemStack += ":d@" + isDurability;
-				}
-
-				if (is.getAmount() != 1)
-				{
-					String isAmount = String.valueOf(is.getAmount());
-					serializedItemStack += ":a@" + isAmount;
-				}
-
-				Map<Enchantment,Integer> isEnch = is.getEnchantments();
-				if (isEnch.size() > 0)
-				{
-					for (Entry<Enchantment,Integer> ench : isEnch.entrySet())
-					{
-						serializedItemStack += ":e@" + ench.getKey().getId() + "@" + ench.getValue();
-					}
-				}
-
-				serialization += i + "#" + serializedItemStack + ";";
-			}
+	public static String inventoryToString(Inventory inventory) {
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		DataOutputStream dataOutput = new DataOutputStream(outputStream);
+		NBTTagList itemList = new NBTTagList();
+		// Save every element in the list
+		for (int i = 0; i < inventory.getSize(); i++) {
+			NBTTagCompound outputObject = new NBTTagCompound();
+			net.minecraft.server.v1_5_R3.ItemStack craft = getCraftVersion(inventory.getItem(i));
+			// Convert the item stack to a NBT compound
+			if (craft != null)
+				craft.save(outputObject);
+			itemList.add(outputObject);
 		}
-		return serialization;
+		// Now save the list
+		NBTBase.a(itemList, dataOutput);
+
+		// Serialize that array
+		return new BigInteger(1, outputStream.toByteArray()).toString(32);
+		// return encodeBase64(outputStream.toByteArray());
 	}
 
-	public static Inventory StringToInventory (String invString, String name)
-	{
-		String[] serializedBlocks = invString.split(";");
-		String invInfo = serializedBlocks[0];
-		Inventory deserializedInventory = Bukkit.getServer().createInventory(null, Integer.valueOf(invInfo), ChatColor.translateAlternateColorCodes('&', name));
+	public static Inventory stringToInventory(String data, String name)	{
+		ByteArrayInputStream inputStream = new ByteArrayInputStream(new BigInteger(data, 32).toByteArray());
+		// ByteArrayInputStream inputStream = new
+		// ByteArrayInputStream(decodeBase64(data));
+		NBTTagList itemList = (NBTTagList) NBTBase.b(new DataInputStream(inputStream));
+		Inventory inventory = new CraftInventoryCustom(null, itemList.size(), ChatColor.translateAlternateColorCodes('&', name));
 
-		for (int i = 1; i < serializedBlocks.length; i++)
-		{
-			String[] serializedBlock = serializedBlocks[i].split("#");
-			int stackPosition = Integer.valueOf(serializedBlock[0]);
-
-			if (stackPosition >= deserializedInventory.getSize())
-			{
-				continue;
+		for (int i = 0; i < itemList.size(); i++) {
+			NBTTagCompound inputObject = (NBTTagCompound) itemList.get(i);
+			// IsEmpty
+			if (!inputObject.isEmpty()) {
+				inventory.setItem(i, CraftItemStack.asBukkitCopy(net.minecraft.server.v1_5_R3.ItemStack.createStack(inputObject)));
 			}
-
-			ItemStack is = null;
-			Boolean createdItemStack = false;
-
-			String[] serializedItemStack = serializedBlock[1].split(":");
-			for (String itemInfo : serializedItemStack)
-			{
-				String[] itemAttribute = itemInfo.split("@");
-				if (itemAttribute[0].equals("t"))
-				{
-					is = new ItemStack(Material.getMaterial(Integer.valueOf(itemAttribute[1])));
-					createdItemStack = true;
-				}
-				else if (itemAttribute[0].equals("d") && createdItemStack)
-				{
-					is.setDurability(Short.valueOf(itemAttribute[1]));
-				}
-				else if (itemAttribute[0].equals("a") && createdItemStack)
-				{
-					is.setAmount(Integer.valueOf(itemAttribute[1]));
-				}
-				else if (itemAttribute[0].equals("e") && createdItemStack)
-				{
-					is.addEnchantment(Enchantment.getById(Integer.valueOf(itemAttribute[1])), Integer.valueOf(itemAttribute[2]));
-				}
-			}
-			deserializedInventory.setItem(stackPosition, is);
 		}
+		// Serialize that array
+		return inventory;
+	}
 
-		return deserializedInventory;
+	private static net.minecraft.server.v1_5_R3.ItemStack getCraftVersion(ItemStack stack) {
+		if (stack != null)
+			return CraftItemStack.asNMSCopy(stack);
+
+		return null;
 	}
 }

@@ -63,9 +63,9 @@ public class MysqlFunctions {
 					PreparedStatement state = null;
 					if (res.next()) {
 						if (res.getInt(1) == 1) {
-							state = conn.prepareStatement("UPDATE rb_data SET player='"+playerName+"', backpack='"+backpack+"', inventory='"+InventoryHandler.InventoryToString(inv)+"' WHERE player='"+playerName+"' AND backpack='"+backpack+"';");
+							state = conn.prepareStatement("UPDATE rb_data SET player='"+playerName+"', backpack='"+backpack+"', inventory='"+InventoryHandler.inventoryToString(inv)+"' WHERE player='"+playerName+"' AND backpack='"+backpack+"';");
 						} else {
-							state = conn.prepareStatement("INSERT INTO rb_data (player, backpack, inventory) VALUES('"+playerName+"', '"+backpack+"', '"+InventoryHandler.InventoryToString(inv)+"' );");
+							state = conn.prepareStatement("INSERT INTO rb_data (player, backpack, inventory) VALUES('"+playerName+"', '"+backpack+"', '"+InventoryHandler.inventoryToString(inv)+"' );");
 						}
 					}
 					state.executeUpdate();
@@ -87,7 +87,7 @@ public class MysqlFunctions {
 			res.next();
 			String invString = res.getString(1);
 			if (!(invString == null)) {
-				returnInv = InventoryHandler.StringToInventory(invString, RealisticBackpacks.backpackData.get(backpack).get(3));
+				returnInv = InventoryHandler.stringToInventory(invString, plugin.backpackData.get(backpack).get(3));
 			} else {
 				returnInv = null;
 			}
