@@ -2,6 +2,7 @@ package org.fatecrafters.plugins;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -31,6 +32,8 @@ import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class RealisticBackpacks extends JavaPlugin {
+
+	public static RBInterface inter;
 
 	public static Economy econ = null;
 
@@ -66,49 +69,76 @@ public class RealisticBackpacks extends JavaPlugin {
 	 * 12 = hungerBarsToSubtractWhenEating
 	 * 13 = Purchasable
 	 * 14 = Price
+	 * 15 = OpenWith
 	 */
 
 	@Override
-	public void onEnable() { 
-		saveDefaultConfig();
-		MysqlFunctions.setPlugin(this);
-		getServer().getPluginManager().registerEvents(new RBListener(this), this);
-		if (!setupEconomy()) {
-			getLogger().info("Vault not found, economy features disabled.");
-			vault = false;
-		} else {
-			getLogger().info("Vault found, economy features enabled.");
-		}
-		File f = new File(getDataFolder()+File.separator+"messages.yml");
-		if (!f.exists()) {
-			try {
-				f.createNewFile();
-			} catch (IOException e) {
-				e.printStackTrace();
+	public void onEnable() {
+		String p = getServer().getClass().getPackage().getName();
+		String version = p.substring(p.lastIndexOf('.') + 1);
+		try {
+			String classname = null;
+			if (version.contains("craftbukkit")) {
+				classname = getClass().getPackage().getName()+".versions.preVersioning";
+			} else {
+				classname = getClass().getPackage().getName()+".versions."+version;
 			}
+			Class<?> clazz = Class.forName(classname);
+			Constructor<?> cons = clazz.getDeclaredConstructor(getClass());
+			Object obj = cons.newInstance(this);
+			if (obj instanceof RBInterface) {
+				inter = (RBInterface) obj;
+			}
+		} catch (Exception e) {
+			getLogger().severe("**********************************************************");
+			getLogger().severe("This version of craftbukkit is not supported, please contact the developer stating this version: "+version);
+			getLogger().severe("RealisticBackpacks will now disable.");
+			getLogger().severe("**********************************************************");
+			setEnabled(false);
 		}
-		setMessage("openBackpackPermError", "&cYou do not have permission to open this backpack.");
-		setMessage("craftPermError", "&cYou do not have permission to craft this backpack.");
-		setMessage("contentsDestroyed", "&cYour backpack contents were destroyed in your death.");
-		setMessage("backpackDoesNotExist", "&cThis backpack does not exist.");
-		setMessage("playerDoesNotExist", "&cThe player does not exist or is offline.");
-		setMessage("noPermission", "&cYou do not have permission.");
-		setMessage("notPurchasable", "&cYou can not purchase this backpack.");
-		setConfig("Data.FileSystem", "flatfile");
-		setConfig("Data.MySQL.database", "minecraft");
-		setConfig("Data.MySQL.username", "user");
-		setConfig("Data.MySQL.password", "pass");
-		setConfig("Data.MySQL.ip", "localhost");
-		setConfig("Data.MySQL.port", 3306);
-		saveConfig();
-		reloadConfig();
-		setupLists();
-		File userdata = new File(getDataFolder()+File.separator+"userdata");
-		if (!userdata.exists()) {
-			userdata.mkdirs();
+		if (this.isEnabled()) {
+			saveDefaultConfig();
+			MysqlFunctions.setMysqlFunc(this);
+			getServer().getPluginManager().registerEvents(new RBListener(this), this);
+			if (!setupEconomy()) {
+				getLogger().info("Vault not found, economy features disabled.");
+				vault = false;
+			} else {
+				getLogger().info("Vault found, economy features enabled.");
+			}
+			File f = new File(getDataFolder()+File.separator+"messages.yml");
+			if (!f.exists()) {
+				try {
+					f.createNewFile();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+			setMessage("openBackpackPermError", "&cYou do not have permission to open this backpack.");
+			setMessage("craftPermError", "&cYou do not have permission to craft this backpack.");
+			setMessage("contentsDestroyed", "&cYour backpack contents were destroyed in your death.");
+			setMessage("backpackDoesNotExist", "&cThis backpack does not exist.");
+			setMessage("playerDoesNotExist", "&cThe player does not exist or is offline.");
+			setMessage("noPermission", "&cYou do not have permission.");
+			setMessage("notPurchasable", "&cYou can not purchase this backpack.");
+			setMessage("listCommandNotBuyable", "&aNot Purchasable");
+			setMessage("listCommandNoPermission", "&aInsufficient permissions to purchase");
+			setConfig("Data.FileSystem", "flatfile");
+			setConfig("Data.MySQL.database", "minecraft");
+			setConfig("Data.MySQL.username", "user");
+			setConfig("Data.MySQL.password", "pass");
+			setConfig("Data.MySQL.ip", "localhost");
+			setConfig("Data.MySQL.port", 3306);
+			saveConfig();
+			reloadConfig();
+			setupLists();
+			File userdata = new File(getDataFolder()+File.separator+"userdata");
+			if (!userdata.exists()) {
+				userdata.mkdirs();
+			}
+			setup();
+			getLogger().info("Realistic Backpacks has been enabled.");
 		}
-		setup();
-		getLogger().info("Realistic Backpacks has been enabled.");
 	}
 
 	@Override
@@ -144,21 +174,26 @@ public class RealisticBackpacks extends JavaPlugin {
 						sender.sendMessage(ChatColor.RED + "This command can only be used by a player.");
 						return false;
 					}
-					String backpack = args[1];
-					if (!backpacks.contains(backpack)) {
-						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', messageData.get("backpackDoesNotExist")));
+					if (!(args.length == 2)) {
+						sender.sendMessage(ChatColor.RED + "Incorrect syntax. Please use:"+ ChatColor.GRAY +" /rb buy <backpack>");
 						return false;
 					}
-					if (!backpackData.get(backpack).get(13).equalsIgnoreCase("true")) {
-						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', messageData.get("notPurchasable")));
+					String backpack = args[1];
+					for (String b : backpacks) {
+						if (b.equalsIgnoreCase(backpack)) {
+							backpack = b;
+						}
+					}
+					if (!backpacks.contains(backpack)) {
+						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', messageData.get("backpackDoesNotExist")));
 						return false;
 					}
 					if (!sender.hasPermission("rb."+backpack+".buy")) {
 						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', messageData.get("noPermission")));
 						return false;
 					}
-					if (!(args.length == 2)) {
-						sender.sendMessage(ChatColor.RED + "Incorrect syntax. Please use:"+ ChatColor.GRAY +" /rb buy <backpack>");
+					if (!backpackData.get(backpack).get(13).equals("true")) {
+						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', messageData.get("notPurchasable")));
 						return false;
 					}
 					double price = Double.parseDouble(backpackData.get(backpack).get(14));
@@ -167,6 +202,10 @@ public class RealisticBackpacks extends JavaPlugin {
 						return false;
 					}
 					Player p = (Player) sender;
+					if (p.getInventory().contains(backpackItems.get(backpack))) {
+						sender.sendMessage(ChatColor.RED + "You already have this backpack on you!");
+						return false;
+					}
 					Inventory inv = p.getInventory();
 					if (inv.firstEmpty() != -1) {
 						econ.withdrawPlayer(p.getName(), price);
@@ -186,25 +225,28 @@ public class RealisticBackpacks extends JavaPlugin {
 					sender.sendMessage(ChatColor.LIGHT_PURPLE+"  Name  "+ChatColor.GOLD+"|"+ChatColor.AQUA+"  Size  "+ChatColor.GOLD+"|"+ChatColor.GREEN+"  Price  ");
 					sender.sendMessage(ChatColor.GOLD+"-----------------------------------");
 					for (String backpack : backpacks) {
+						boolean hasPerm = sender.hasPermission("rb."+backpack+".buy");
 						List<String> key = backpackData.get(backpack);
-						if (backpackData.get(backpack).get(13).equalsIgnoreCase("true")) {
+						if (backpackData.get(backpack).get(13).equalsIgnoreCase("true") && hasPerm) {
 							sender.sendMessage(ChatColor.LIGHT_PURPLE+backpack+ChatColor.GOLD+" | "+ChatColor.AQUA+key.get(0)+ChatColor.GOLD+" | "+ChatColor.GREEN+Double.parseDouble(key.get(14)));	
+						} else if (!backpackData.get(backpack).get(13).equalsIgnoreCase("true") && hasPerm) {
+							sender.sendMessage(ChatColor.LIGHT_PURPLE+backpack+ChatColor.GOLD+" | "+ChatColor.AQUA+key.get(0)+ChatColor.GOLD+" | "+ChatColor.translateAlternateColorCodes('&', messageData.get("listCommandNotBuyable")));	
 						} else {
-							sender.sendMessage(ChatColor.LIGHT_PURPLE+backpack+ChatColor.GOLD+" | "+ChatColor.AQUA+key.get(0)+ChatColor.GOLD+" | "+ChatColor.GREEN+"Not Purchasable");	
+							sender.sendMessage(ChatColor.LIGHT_PURPLE+backpack+ChatColor.GOLD+" | "+ChatColor.AQUA+key.get(0)+ChatColor.GOLD+" | "+ChatColor.translateAlternateColorCodes('&', messageData.get("listCommandNoPermission")));
 						}
 					}
 				} else if (args[0].equalsIgnoreCase("give")) {
-					String backpack = args[2];
-					if (!backpacks.contains(backpack)) {
-						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', messageData.get("backpackDoesNotExist")));
+					if (!(args.length == 3)) {
+						sender.sendMessage(ChatColor.RED + "Incorrect syntax. Please use:"+ ChatColor.GRAY +" /rb give <player> <backpack>");
 						return false;
 					}
+					String backpack = args[2].toLowerCase();
 					if (!sender.hasPermission("rb."+backpack+".give")) {
 						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', messageData.get("noPermission")));
 						return false;
 					}
-					if (!(args.length == 3)) {
-						sender.sendMessage(ChatColor.RED + "Incorrect syntax. Please use:"+ ChatColor.GRAY +" /rb give <player> <backpack>");
+					if (!backpacks.contains(backpack)) {
+						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', messageData.get("backpackDoesNotExist")));
 						return false;
 					}
 					Player other = getServer().getPlayer(args[1]);
@@ -304,7 +346,7 @@ public class RealisticBackpacks extends JavaPlugin {
 			}
 		}
 	}
-	
+
 	private void setConfig(String path, Object set) {
 		if (!getConfig().isSet(path)) {
 			getConfig().set(path, set);
@@ -343,7 +385,8 @@ public class RealisticBackpacks extends JavaPlugin {
 			list.add(11, getConfig().getString("Backpacks."+backpack+".IncreasedHungerFeature.extraHungerBarsToDeplete"));
 			list.add(12, getConfig().getString("Backpacks."+backpack+".IncreasedHungerFeature.hungerBarsToSubtractWhenEating"));
 			list.add(13, getConfig().getString("Backpacks."+backpack+".Purchasable"));
-			list.add(14, getConfig().getString("Backpacks."+backpack+".Price"));
+			list.add(14, getConfig().getString("Backpacks."+backpack+".Price"));	
+			list.add(15, getConfig().getString("Backpacks."+backpack+".OpenWith"));	
 			backpackData.put(backpack, list);
 		}
 		File f = new File(getDataFolder()+File.separator+"messages.yml");
@@ -356,7 +399,7 @@ public class RealisticBackpacks extends JavaPlugin {
 	private void setup() {
 		user = getConfig().getString("Data.MySQL.username");
 		password = getConfig().getString("Data.MySQL.password");
-		url = "jdbc:mysql://"+getConfig().getString("Data.MySQL.ip")+":"+getConfig().getInt("Data.MySQL.port")+"/"+getConfig().getString("Data.MySQL.database");
+		url = "jdbc:mysql://"+getConfig().getString("Data.MySQL.ip")+":"+getConfig().getInt("Data.MySQL.port")+"/"+getConfig().getString("Data.MySQL.database");		
 		if (!getConfig().isSet("Config.MultipleBackpacksInInventory.average")) {
 			average = false;
 		} else {
@@ -376,7 +419,7 @@ public class RealisticBackpacks extends JavaPlugin {
 			}
 		} else {
 			usingMysql = false;
-		}
+		}		
 		for (String backpack : backpacks) {			
 			List<String> key = backpackData.get(backpack);
 			String backpackitem = key.get(2);

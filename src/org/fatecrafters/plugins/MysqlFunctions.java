@@ -14,7 +14,7 @@ public class MysqlFunctions {
 
 	private static RealisticBackpacks plugin;
 
-	public static void setPlugin(RealisticBackpacks plugin) {
+	public static void setMysqlFunc(RealisticBackpacks plugin) {
 		MysqlFunctions.plugin = plugin;
 	}
 
@@ -63,9 +63,9 @@ public class MysqlFunctions {
 					PreparedStatement state = null;
 					if (res.next()) {
 						if (res.getInt(1) == 1) {
-							state = conn.prepareStatement("UPDATE rb_data SET player='"+playerName+"', backpack='"+backpack+"', inventory='"+InventoryHandler.inventoryToString(inv)+"' WHERE player='"+playerName+"' AND backpack='"+backpack+"';");
+							state = conn.prepareStatement("UPDATE rb_data SET player='"+playerName+"', backpack='"+backpack+"', inventory='"+RealisticBackpacks.inter.inventoryToString(inv)+"' WHERE player='"+playerName+"' AND backpack='"+backpack+"';");
 						} else {
-							state = conn.prepareStatement("INSERT INTO rb_data (player, backpack, inventory) VALUES('"+playerName+"', '"+backpack+"', '"+InventoryHandler.inventoryToString(inv)+"' );");
+							state = conn.prepareStatement("INSERT INTO rb_data (player, backpack, inventory) VALUES('"+playerName+"', '"+backpack+"', '"+RealisticBackpacks.inter.inventoryToString(inv)+"' );");
 						}
 					}
 					state.executeUpdate();
@@ -84,12 +84,13 @@ public class MysqlFunctions {
 			Connection conn = DriverManager.getConnection(plugin.getUrl(), plugin.getUser(), plugin.getPass());
 			Statement state = conn.createStatement();
 			ResultSet res = state.executeQuery("SELECT inventory FROM rb_data WHERE player='"+playerName+"' AND backpack='"+backpack+"' LIMIT 1;");
-			res.next();
-			String invString = res.getString(1);
-			if (!(invString == null)) {
-				returnInv = InventoryHandler.stringToInventory(invString, plugin.backpackData.get(backpack).get(3));
-			} else {
-				returnInv = null;
+			if (res.next()) {
+				String invString = res.getString(1);
+				if (invString != null) {
+					returnInv = RealisticBackpacks.inter.stringToInventory(invString, plugin.backpackData.get(backpack).get(3));
+				} else {
+					returnInv = null;
+				}
 			}
 			state.close();
 			conn.close();

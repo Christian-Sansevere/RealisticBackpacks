@@ -60,24 +60,37 @@ public class RBListener implements Listener {
 	 * 12 = hungerBarsToSubtractWhenEating
 	 * 13 = Purchasable
 	 * 14 = Price
+	 * 15 = OpenWith
 	 */
 
 	@SuppressWarnings("deprecation")
 	@EventHandler(priority = EventPriority.NORMAL)
-	public void onRightClick(PlayerInteractEvent e) {;
-	Action act = e.getAction();
-	if (!act.equals(Action.LEFT_CLICK_AIR) || !act.equals(Action.LEFT_CLICK_BLOCK)) {
+	public void onRightClick(PlayerInteractEvent e) {
+		Action act = e.getAction();
 		Player p = e.getPlayer();
 		ItemStack item = p.getItemInHand();
 		String name = p.getName();
 		if (item.hasItemMeta()) {
 			for (String backpack : plugin.backpacks) {
-				if (!p.hasPermission("rb."+backpack+".use")) {
-					p.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("openBackpackPermError")));
-					continue;
-				}
 				List<String> key = plugin.backpackData.get(backpack);
-				if (item.getItemMeta().getDisplayName().equals(ChatColor.translateAlternateColorCodes('&', key.get(3)))) { 
+				if (item.getItemMeta().hasDisplayName() && item.getItemMeta().getDisplayName().equals(ChatColor.translateAlternateColorCodes('&', key.get(3)))) {
+					String openWith = key.get(15);
+					if (openWith != null) {
+						if (openWith.equalsIgnoreCase("left_click")) {
+							if (act.equals(Action.RIGHT_CLICK_AIR)) continue;
+							if (act.equals(Action.RIGHT_CLICK_BLOCK)) continue;
+						} else if (openWith.equalsIgnoreCase("right_click")) {
+							if (act.equals(Action.LEFT_CLICK_AIR)) continue;
+							if (act.equals(Action.LEFT_CLICK_BLOCK)) continue;
+						}
+					} else {
+						if (act.equals(Action.LEFT_CLICK_AIR)) continue;
+						if (act.equals(Action.LEFT_CLICK_BLOCK)) continue;
+					}
+					if (!p.hasPermission("rb."+backpack+".use")) {
+						p.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("openBackpackPermError")));
+						continue;
+					}
 					if (act.equals(Action.RIGHT_CLICK_BLOCK)) {
 						e.setCancelled(true);
 						p.updateInventory();
@@ -105,7 +118,7 @@ public class RBListener implements Listener {
 						if (config.getString(backpack+".Inventory") == null) {
 							inv = plugin.getServer().createInventory(p, Integer.parseInt(key.get(0)), ChatColor.translateAlternateColorCodes('&', key.get(3)));
 						} else {
-							inv = InventoryHandler.stringToInventory(config.getString(backpack+".Inventory"), key.get(3));
+							inv = RealisticBackpacks.inter.stringToInventory(config.getString(backpack+".Inventory"), key.get(3));
 						}
 					}
 					playerData.put(name, backpack);
@@ -114,13 +127,12 @@ public class RBListener implements Listener {
 			}
 		}
 	}
-	}
 
 	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
 	public void onInventoryClose(InventoryCloseEvent e) {
 		final String name = e.getPlayer().getName();
 		if (playerData.containsKey(name)) {
-			final Inventory inv = e.getInventory();
+			final Inventory inv = e.getView().getTopInventory();
 			plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
 				public void run() {
 					if (plugin.isUsingMysql()) {
@@ -130,7 +142,7 @@ public class RBListener implements Listener {
 							e.printStackTrace();
 						}
 					} else {
-						String invString = InventoryHandler.inventoryToString(inv);
+						String invString = RealisticBackpacks.inter.inventoryToString(inv);
 						File file = new File(plugin.getDataFolder()+File.separator+"userdata"+File.separator+name+".yml");
 						FileConfiguration config = YamlConfiguration.loadConfiguration(file);
 						config.set(playerData.get(name)+".Inventory", invString);
@@ -178,7 +190,7 @@ public class RBListener implements Listener {
 				continue;
 			p.setWalkSpeed(0.2F);
 			List<String> key = plugin.backpackData.get(backpack);
-			if (key.get(5) != null && key.get(5).equalsIgnoreCase("true")) {
+			if (key.get(5) != null && key.get(5).equals("true")) {
 				//Drop contents
 				Inventory binv = null;
 				if (plugin.isUsingMysql()) {
@@ -196,7 +208,7 @@ public class RBListener implements Listener {
 					if (config.getString(backpack+".Inventory") == null) {
 						continue;
 					}
-					binv = InventoryHandler.stringToInventory(config.getString(backpack+".Inventory"), key.get(3));
+					binv = RealisticBackpacks.inter.stringToInventory(config.getString(backpack+".Inventory"), key.get(3));
 				}
 				if (binv != null) {
 					for (ItemStack item : binv.getContents()) {
@@ -206,16 +218,16 @@ public class RBListener implements Listener {
 					}
 				}
 			}
-			if (key.get(4) != null && key.get(4).equalsIgnoreCase("true")) {
+			if (key.get(4) != null && key.get(4).equals("true")) {
 				//Destroy contents
 				destroyContents(backpack, name);
 				p.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("contentsDestroyed")));
 			}
-			if (key.get(6) != null && key.get(6).equalsIgnoreCase("false")) {
+			if (key.get(6) != null && key.get(6).equals("false")) {
 				//Drop backpack
 				e.getDrops().remove(plugin.backpackItems.get(backpack));
 			}
-			if (key.get(7) != null && key.get(7).equalsIgnoreCase("true")) {
+			if (key.get(7) != null && key.get(7).equals("true")) {
 				deadPlayers.put(name, backpack);
 			}
 		}
@@ -228,7 +240,7 @@ public class RBListener implements Listener {
 		String name = p.getName();
 		for (String backpack : plugin.backpacks) {
 			List<String> key = plugin.backpackData.get(backpack);
-			if (key.get(7) != null && key.get(7).equalsIgnoreCase("true") && deadPlayers.get(name) != null && deadPlayers.get(name).equals(backpack)) {
+			if (key.get(7) != null && key.get(7).equals("true") && deadPlayers.get(name) != null && deadPlayers.get(name).equals(backpack)) {
 				//Keep backpack
 				p.getInventory().addItem(plugin.backpackItems.get(backpack));
 				p.updateInventory();
@@ -247,7 +259,7 @@ public class RBListener implements Listener {
 				List<String> backpackList = new ArrayList<String>();
 				for (String backpack : plugin.backpacks) {
 					List<String> key = plugin.backpackData.get(backpack);
-					if (key.get(8).equalsIgnoreCase("true") && inv.contains(plugin.backpackItems.get(backpack))) {
+					if (key.get(8).equals("true") && inv.contains(plugin.backpackItems.get(backpack))) {
 						backpackList.add(backpack);
 					}
 				}
@@ -343,7 +355,8 @@ public class RBListener implements Listener {
 			final Player p = (Player) e.getWhoClicked();
 			final ItemStack curItem = e.getCurrentItem();
 			final Inventory inv = p.getInventory();
-			if (curItem != null) {
+			final Inventory otherInv = e.getView().getTopInventory();
+			if (curItem != null && otherInv != null) {
 				plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
 					public void run() {
 						if (slowedPlayers.contains(p.getName())) {
@@ -378,7 +391,7 @@ public class RBListener implements Listener {
 					List<String> backpackList = new ArrayList<String>();
 					for (String backpack : plugin.backpacks) {
 						List<String> key = plugin.backpackData.get(backpack);
-						if (!key.get(10).equalsIgnoreCase("true")) continue;
+						if (!key.get(10).equals("true")) continue;
 						if (!inv.contains(plugin.backpackItems.get(backpack))) continue;
 						backpackList.add(backpack);
 					}
