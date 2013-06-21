@@ -48,10 +48,10 @@ public class RealisticBackpacks extends JavaPlugin {
 
 	public List<String> backpacks = new ArrayList<String>();
 	public HashMap<String, String> messageData = new HashMap<String, String>();
-	public HashMap<String,List<String>> backpackData = new HashMap<String,List<String>>();
-	public HashMap<String,List<String>> backpackLore = new HashMap<String,List<String>>();
-	public HashMap<String,List<String>> backpackRecipe = new HashMap<String,List<String>>();
-	public HashMap<String,ItemStack> backpackItems = new HashMap<String,ItemStack>();
+	public HashMap<String, List<String>> backpackData = new HashMap<String, List<String>>();
+	public HashMap<String, List<String>> backpackLore = new HashMap<String, List<String>>();
+	public HashMap<String, List<String>> backpackRecipe = new HashMap<String, List<String>>();
+	public HashMap<String, ItemStack> backpackItems = new HashMap<String, ItemStack>();
 
 	/*List key ---------
 	 * 0 = Size
@@ -74,24 +74,24 @@ public class RealisticBackpacks extends JavaPlugin {
 
 	@Override
 	public void onEnable() {
-		String p = getServer().getClass().getPackage().getName();
-		String version = p.substring(p.lastIndexOf('.') + 1);
+		final String p = getServer().getClass().getPackage().getName();
+		final String version = p.substring(p.lastIndexOf('.') + 1);
 		try {
 			String classname = null;
 			if (version.contains("craftbukkit")) {
-				classname = getClass().getPackage().getName()+".versions.preVersioning";
+				classname = getClass().getPackage().getName() + ".versions.preVersioning";
 			} else {
-				classname = getClass().getPackage().getName()+".versions."+version;
+				classname = getClass().getPackage().getName() + ".versions." + version;
 			}
-			Class<?> clazz = Class.forName(classname);
-			Constructor<?> cons = clazz.getDeclaredConstructor(getClass());
-			Object obj = cons.newInstance(this);
+			final Class<?> clazz = Class.forName(classname);
+			final Constructor<?> cons = clazz.getDeclaredConstructor(getClass());
+			final Object obj = cons.newInstance(this);
 			if (obj instanceof RBInterface) {
 				inter = (RBInterface) obj;
 			}
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			getLogger().severe("**********************************************************");
-			getLogger().severe("This version of craftbukkit is not supported, please contact the developer stating this version: "+version);
+			getLogger().severe("This version of craftbukkit is not supported, please contact the developer stating this version: " + version);
 			getLogger().severe("RealisticBackpacks will now disable.");
 			getLogger().severe("**********************************************************");
 			setEnabled(false);
@@ -106,11 +106,11 @@ public class RealisticBackpacks extends JavaPlugin {
 			} else {
 				getLogger().info("Vault found, economy features enabled.");
 			}
-			File f = new File(getDataFolder()+File.separator+"messages.yml");
+			final File f = new File(getDataFolder() + File.separator + "messages.yml");
 			if (!f.exists()) {
 				try {
 					f.createNewFile();
-				} catch (IOException e) {
+				} catch (final IOException e) {
 					e.printStackTrace();
 				}
 			}
@@ -132,7 +132,7 @@ public class RealisticBackpacks extends JavaPlugin {
 			saveConfig();
 			reloadConfig();
 			setupLists();
-			File userdata = new File(getDataFolder()+File.separator+"userdata");
+			final File userdata = new File(getDataFolder() + File.separator + "userdata");
 			if (!userdata.exists()) {
 				userdata.mkdirs();
 			}
@@ -148,16 +148,17 @@ public class RealisticBackpacks extends JavaPlugin {
 		getLogger().info("Realistic Backpacks has been disabled.");
 	}
 
+	@Override
 	@SuppressWarnings("deprecation")
-	public boolean onCommand(final CommandSender sender, Command cmd, String label, String[] args) {
-		if(cmd.getName().equalsIgnoreCase("rb")) {
+	public boolean onCommand(final CommandSender sender, final Command cmd, final String label, final String[] args) {
+		if (cmd.getName().equalsIgnoreCase("rb")) {
 			if (args.length >= 1) {
 				if (args[0].equalsIgnoreCase("reload")) {
 					if (!sender.hasPermission("rb.reload")) {
 						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', messageData.get("noPermission")));
 						return false;
 					}
-					Long first = System.currentTimeMillis();
+					final Long first = System.currentTimeMillis();
 					reloadConfig();
 					setupLists();
 					getServer().resetRecipes();
@@ -175,11 +176,11 @@ public class RealisticBackpacks extends JavaPlugin {
 						return false;
 					}
 					if (!(args.length == 2)) {
-						sender.sendMessage(ChatColor.RED + "Incorrect syntax. Please use:"+ ChatColor.GRAY +" /rb buy <backpack>");
+						sender.sendMessage(ChatColor.RED + "Incorrect syntax. Please use:" + ChatColor.GRAY + " /rb buy <backpack>");
 						return false;
 					}
 					String backpack = args[1];
-					for (String b : backpacks) {
+					for (final String b : backpacks) {
 						if (b.equalsIgnoreCase(backpack)) {
 							backpack = b;
 						}
@@ -188,7 +189,7 @@ public class RealisticBackpacks extends JavaPlugin {
 						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', messageData.get("backpackDoesNotExist")));
 						return false;
 					}
-					if (!sender.hasPermission("rb."+backpack+".buy")) {
+					if (!sender.hasPermission("rb." + backpack + ".buy")) {
 						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', messageData.get("noPermission")));
 						return false;
 					}
@@ -196,22 +197,22 @@ public class RealisticBackpacks extends JavaPlugin {
 						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', messageData.get("notPurchasable")));
 						return false;
 					}
-					double price = Double.parseDouble(backpackData.get(backpack).get(14));
+					final double price = Double.parseDouble(backpackData.get(backpack).get(14));
 					if (econ.getBalance(sender.getName()) < price) {
-						sender.sendMessage(ChatColor.RED + "You can not afford "+ChatColor.GOLD+price+ChatColor.RED+" to purchase this backpack.");
+						sender.sendMessage(ChatColor.RED + "You can not afford " + ChatColor.GOLD + price + ChatColor.RED + " to purchase this backpack.");
 						return false;
 					}
-					Player p = (Player) sender;
+					final Player p = (Player) sender;
 					if (p.getInventory().contains(backpackItems.get(backpack))) {
 						sender.sendMessage(ChatColor.RED + "You already have this backpack on you!");
 						return false;
 					}
-					Inventory inv = p.getInventory();
+					final Inventory inv = p.getInventory();
 					if (inv.firstEmpty() != -1) {
 						econ.withdrawPlayer(p.getName(), price);
 						inv.addItem(backpackItems.get(backpack));
 						p.updateInventory();
-						sender.sendMessage(ChatColor.GREEN+"You have purchased the "+ChatColor.GOLD+backpack+ChatColor.GREEN+" backpack for "+ChatColor.GOLD+price);
+						sender.sendMessage(ChatColor.GREEN + "You have purchased the " + ChatColor.GOLD + backpack + ChatColor.GREEN + " backpack for " + ChatColor.GOLD + price);
 						return true;
 					} else {
 						sender.sendMessage(ChatColor.RED + "Your inventory is full.");
@@ -222,26 +223,31 @@ public class RealisticBackpacks extends JavaPlugin {
 						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', messageData.get("noPermission")));
 						return false;
 					}
-					sender.sendMessage(ChatColor.LIGHT_PURPLE+"  Name  "+ChatColor.GOLD+"|"+ChatColor.AQUA+"  Size  "+ChatColor.GOLD+"|"+ChatColor.GREEN+"  Price  ");
-					sender.sendMessage(ChatColor.GOLD+"-----------------------------------");
-					for (String backpack : backpacks) {
-						boolean hasPerm = sender.hasPermission("rb."+backpack+".buy");
-						List<String> key = backpackData.get(backpack);
+					sender.sendMessage(ChatColor.LIGHT_PURPLE + "  Name  " + ChatColor.GOLD + "|" + ChatColor.AQUA + "  Size  " + ChatColor.GOLD + "|" + ChatColor.GREEN + "  Price  ");
+					sender.sendMessage(ChatColor.GOLD + "-----------------------------------");
+					for (final String backpack : backpacks) {
+						final boolean hasPerm = sender.hasPermission("rb." + backpack + ".buy");
+						final List<String> key = backpackData.get(backpack);
 						if (backpackData.get(backpack).get(13).equalsIgnoreCase("true") && hasPerm) {
-							sender.sendMessage(ChatColor.LIGHT_PURPLE+backpack+ChatColor.GOLD+" | "+ChatColor.AQUA+key.get(0)+ChatColor.GOLD+" | "+ChatColor.GREEN+Double.parseDouble(key.get(14)));	
+							sender.sendMessage(ChatColor.LIGHT_PURPLE + backpack + ChatColor.GOLD + " | " + ChatColor.AQUA + key.get(0) + ChatColor.GOLD + " | " + ChatColor.GREEN + Double.parseDouble(key.get(14)));
 						} else if (!backpackData.get(backpack).get(13).equalsIgnoreCase("true") && hasPerm) {
-							sender.sendMessage(ChatColor.LIGHT_PURPLE+backpack+ChatColor.GOLD+" | "+ChatColor.AQUA+key.get(0)+ChatColor.GOLD+" | "+ChatColor.translateAlternateColorCodes('&', messageData.get("listCommandNotBuyable")));	
+							sender.sendMessage(ChatColor.LIGHT_PURPLE + backpack + ChatColor.GOLD + " | " + ChatColor.AQUA + key.get(0) + ChatColor.GOLD + " | " + ChatColor.translateAlternateColorCodes('&', messageData.get("listCommandNotBuyable")));
 						} else {
-							sender.sendMessage(ChatColor.LIGHT_PURPLE+backpack+ChatColor.GOLD+" | "+ChatColor.AQUA+key.get(0)+ChatColor.GOLD+" | "+ChatColor.translateAlternateColorCodes('&', messageData.get("listCommandNoPermission")));
+							sender.sendMessage(ChatColor.LIGHT_PURPLE + backpack + ChatColor.GOLD + " | " + ChatColor.AQUA + key.get(0) + ChatColor.GOLD + " | " + ChatColor.translateAlternateColorCodes('&', messageData.get("listCommandNoPermission")));
 						}
 					}
 				} else if (args[0].equalsIgnoreCase("give")) {
 					if (!(args.length == 3)) {
-						sender.sendMessage(ChatColor.RED + "Incorrect syntax. Please use:"+ ChatColor.GRAY +" /rb give <player> <backpack>");
+						sender.sendMessage(ChatColor.RED + "Incorrect syntax. Please use:" + ChatColor.GRAY + " /rb give <player> <backpack>");
 						return false;
 					}
-					String backpack = args[2].toLowerCase();
-					if (!sender.hasPermission("rb."+backpack+".give")) {
+					String backpack = args[2];
+					for (final String b : backpacks) {
+						if (b.equalsIgnoreCase(backpack)) {
+							backpack = b;
+						}
+					}
+					if (!sender.hasPermission("rb." + backpack + ".give")) {
 						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', messageData.get("noPermission")));
 						return false;
 					}
@@ -249,16 +255,16 @@ public class RealisticBackpacks extends JavaPlugin {
 						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', messageData.get("backpackDoesNotExist")));
 						return false;
 					}
-					Player other = getServer().getPlayer(args[1]);
+					final Player other = getServer().getPlayer(args[1]);
 					if (other == null) {
 						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', messageData.get("playerDoesNotExist")));
 						return false;
 					}
-					Inventory inv = other.getInventory();
+					final Inventory inv = other.getInventory();
 					if (inv.firstEmpty() != -1) {
 						inv.addItem(backpackItems.get(backpack));
 						other.updateInventory();
-						sender.sendMessage(ChatColor.GREEN+"You have given the "+ChatColor.GOLD+backpack+ChatColor.GREEN+" backpack to "+ChatColor.GOLD+other.getName());
+						sender.sendMessage(ChatColor.GREEN + "You have given the " + ChatColor.GOLD + backpack + ChatColor.GREEN + " backpack to " + ChatColor.GOLD + other.getName());
 						return true;
 					} else {
 						sender.sendMessage(ChatColor.RED + "Your inventory is full.");
@@ -276,29 +282,31 @@ public class RealisticBackpacks extends JavaPlugin {
 						exist = true;
 					}
 					getServer().getScheduler().runTaskAsynchronously(this, new Runnable() {
+						@Override
 						public void run() {
 							try {
-								Connection conn = DriverManager.getConnection(url, user, password);
-								File dir = new File(getDataFolder()+File.separator+"userdata");
-								int i = 0, times = 0, files = dir.listFiles().length;
-								for (File child : dir.listFiles()) {
-									FileConfiguration config = YamlConfiguration.loadConfiguration(child);
-									String player = child.getName().replace(".yml", "");
+								final Connection conn = DriverManager.getConnection(url, user, password);
+								final File dir = new File(getDataFolder() + File.separator + "userdata");
+								int i = 0, times = 0;
+								final int files = dir.listFiles().length;
+								for (final File child : dir.listFiles()) {
+									final FileConfiguration config = YamlConfiguration.loadConfiguration(child);
+									final String player = child.getName().replace(".yml", "");
 									i++;
-									Statement statement = conn.createStatement();
+									final Statement statement = conn.createStatement();
 									PreparedStatement state = null;
-									for (String backpack : config.getConfigurationSection("").getKeys(false)) {
+									for (final String backpack : config.getConfigurationSection("").getKeys(false)) {
 										if (exist) {
-											ResultSet res = statement.executeQuery("SELECT EXISTS(SELECT 1 FROM rb_data WHERE player = '"+player+"' AND backpack = '"+backpack+"' LIMIT 1);");
+											final ResultSet res = statement.executeQuery("SELECT EXISTS(SELECT 1 FROM rb_data WHERE player = '" + player + "' AND backpack = '" + backpack + "' LIMIT 1);");
 											if (res.next()) {
 												if (res.getInt(1) == 1) {
-													state = conn.prepareStatement("UPDATE rb_data SET player='"+player+"', backpack='"+backpack+"', inventory='"+config.getString(backpack+".Inventory")+"' WHERE player='"+player+"' AND backpack='"+backpack+"';");
+													state = conn.prepareStatement("UPDATE rb_data SET player='" + player + "', backpack='" + backpack + "', inventory='" + config.getString(backpack + ".Inventory") + "' WHERE player='" + player + "' AND backpack='" + backpack + "';");
 												} else {
-													state = conn.prepareStatement("INSERT INTO rb_data (player, backpack, inventory) VALUES('"+player+"', '"+backpack+"', '"+config.getString(backpack+".Inventory")+"' );");
+													state = conn.prepareStatement("INSERT INTO rb_data (player, backpack, inventory) VALUES('" + player + "', '" + backpack + "', '" + config.getString(backpack + ".Inventory") + "' );");
 												}
 											}
 										} else {
-											state = conn.prepareStatement("INSERT INTO rb_data (player, backpack, inventory) VALUES('"+player+"', '"+backpack+"', '"+config.getString(backpack+".Inventory")+"' );");
+											state = conn.prepareStatement("INSERT INTO rb_data (player, backpack, inventory) VALUES('" + player + "', '" + backpack + "', '" + config.getString(backpack + ".Inventory") + "' );");
 										}
 										state.executeUpdate();
 										state.close();
@@ -306,12 +314,12 @@ public class RealisticBackpacks extends JavaPlugin {
 									if (i == 100) {
 										i = 0;
 										times++;
-										sender.sendMessage(ChatColor.LIGHT_PURPLE+""+times*100+"/"+files+" files have been transferred.");
+										sender.sendMessage(ChatColor.LIGHT_PURPLE + "" + times * 100 + "/" + files + " files have been transferred.");
 									}
 								}
 								conn.close();
-								sender.sendMessage(ChatColor.LIGHT_PURPLE+"File transfer complete.");
-							} catch (SQLException e) {
+								sender.sendMessage(ChatColor.LIGHT_PURPLE + "File transfer complete.");
+							} catch (final SQLException e) {
 								e.printStackTrace();
 							}
 						}
@@ -326,7 +334,7 @@ public class RealisticBackpacks extends JavaPlugin {
 		if (getServer().getPluginManager().getPlugin("Vault") == null) {
 			return false;
 		}
-		RegisteredServiceProvider<Economy> rsp = getServer().getServicesManager().getRegistration(Economy.class);
+		final RegisteredServiceProvider<Economy> rsp = getServer().getServicesManager().getRegistration(Economy.class);
 		if (rsp == null) {
 			return false;
 		}
@@ -334,20 +342,20 @@ public class RealisticBackpacks extends JavaPlugin {
 		return econ != null;
 	}
 
-	private void setMessage(String name, String message) {
-		File f = new File(getDataFolder()+File.separator+"messages.yml");
-		FileConfiguration config = YamlConfiguration.loadConfiguration(f);
+	private void setMessage(final String name, final String message) {
+		final File f = new File(getDataFolder() + File.separator + "messages.yml");
+		final FileConfiguration config = YamlConfiguration.loadConfiguration(f);
 		if (!config.isSet(name)) {
 			config.set(name, message);
 			try {
 				config.save(f);
-			} catch (IOException e) {
+			} catch (final IOException e) {
 				e.printStackTrace();
 			}
 		}
 	}
 
-	private void setConfig(String path, Object set) {
+	private void setConfig(final String path, final Object set) {
 		if (!getConfig().isSet(path)) {
 			getConfig().set(path, set);
 		}
@@ -358,40 +366,40 @@ public class RealisticBackpacks extends JavaPlugin {
 		backpackRecipe.clear();
 		backpackData.clear();
 		backpackLore.clear();
-		for (String backpack : getConfig().getConfigurationSection("Backpacks").getKeys(false)) {
-			List<String> list = new ArrayList<String>();
+		for (final String backpack : getConfig().getConfigurationSection("Backpacks").getKeys(false)) {
+			final List<String> list = new ArrayList<String>();
 			backpacks.add(backpack);
-			list.add(0, getConfig().getString("Backpacks."+backpack+".Size"));
-			list.add(1, getConfig().getString("Backpacks."+backpack+".UseRecipe"));
-			if (getConfig().getStringList("Backpacks."+backpack+".Recipe") != null) {
-				backpackRecipe.put(backpack, getConfig().getStringList("Backpacks."+backpack+".Recipe"));
+			list.add(0, getConfig().getString("Backpacks." + backpack + ".Size"));
+			list.add(1, getConfig().getString("Backpacks." + backpack + ".UseRecipe"));
+			if (getConfig().getStringList("Backpacks." + backpack + ".Recipe") != null) {
+				backpackRecipe.put(backpack, getConfig().getStringList("Backpacks." + backpack + ".Recipe"));
 			} else {
 				backpackRecipe.put(backpack, null);
 			}
-			list.add(2, getConfig().getString("Backpacks."+backpack+".BackpackItem.id"));
-			list.add(3, getConfig().getString("Backpacks."+backpack+".BackpackItem.name"));
-			if (getConfig().getStringList("Backpacks."+backpack+".BackpackItem.lore") != null) {
-				backpackLore.put(backpack, getConfig().getStringList("Backpacks."+backpack+".BackpackItem.lore"));
+			list.add(2, getConfig().getString("Backpacks." + backpack + ".BackpackItem.id"));
+			list.add(3, getConfig().getString("Backpacks." + backpack + ".BackpackItem.name"));
+			if (getConfig().getStringList("Backpacks." + backpack + ".BackpackItem.lore") != null) {
+				backpackLore.put(backpack, getConfig().getStringList("Backpacks." + backpack + ".BackpackItem.lore"));
 			} else {
 				backpackLore.put(backpack, null);
 			}
-			list.add(4, getConfig().getString("Backpacks."+backpack+".onDeath.destroyContents"));
-			list.add(5, getConfig().getString("Backpacks."+backpack+".onDeath.dropContents"));
-			list.add(6, getConfig().getString("Backpacks."+backpack+".onDeath.dropBackpack"));
-			list.add(7, getConfig().getString("Backpacks."+backpack+".onDeath.keepBackpack"));
-			list.add(8, getConfig().getString("Backpacks."+backpack+".WalkSpeedFeature.enabled"));
-			list.add(9, getConfig().getString("Backpacks."+backpack+".WalkSpeedFeature.walkingSpeed"));
-			list.add(10, getConfig().getString("Backpacks."+backpack+".IncreasedHungerFeature.enabled"));
-			list.add(11, getConfig().getString("Backpacks."+backpack+".IncreasedHungerFeature.extraHungerBarsToDeplete"));
-			list.add(12, getConfig().getString("Backpacks."+backpack+".IncreasedHungerFeature.hungerBarsToSubtractWhenEating"));
-			list.add(13, getConfig().getString("Backpacks."+backpack+".Purchasable"));
-			list.add(14, getConfig().getString("Backpacks."+backpack+".Price"));	
-			list.add(15, getConfig().getString("Backpacks."+backpack+".OpenWith"));	
+			list.add(4, getConfig().getString("Backpacks." + backpack + ".onDeath.destroyContents"));
+			list.add(5, getConfig().getString("Backpacks." + backpack + ".onDeath.dropContents"));
+			list.add(6, getConfig().getString("Backpacks." + backpack + ".onDeath.dropBackpack"));
+			list.add(7, getConfig().getString("Backpacks." + backpack + ".onDeath.keepBackpack"));
+			list.add(8, getConfig().getString("Backpacks." + backpack + ".WalkSpeedFeature.enabled"));
+			list.add(9, getConfig().getString("Backpacks." + backpack + ".WalkSpeedFeature.walkingSpeed"));
+			list.add(10, getConfig().getString("Backpacks." + backpack + ".IncreasedHungerFeature.enabled"));
+			list.add(11, getConfig().getString("Backpacks." + backpack + ".IncreasedHungerFeature.extraHungerBarsToDeplete"));
+			list.add(12, getConfig().getString("Backpacks." + backpack + ".IncreasedHungerFeature.hungerBarsToSubtractWhenEating"));
+			list.add(13, getConfig().getString("Backpacks." + backpack + ".Purchasable"));
+			list.add(14, getConfig().getString("Backpacks." + backpack + ".Price"));
+			list.add(15, getConfig().getString("Backpacks." + backpack + ".OpenWith"));
 			backpackData.put(backpack, list);
 		}
-		File f = new File(getDataFolder()+File.separator+"messages.yml");
-		FileConfiguration config = YamlConfiguration.loadConfiguration(f);
-		for (String message : config.getConfigurationSection("").getKeys(false)) {
+		final File f = new File(getDataFolder() + File.separator + "messages.yml");
+		final FileConfiguration config = YamlConfiguration.loadConfiguration(f);
+		for (final String message : config.getConfigurationSection("").getKeys(false)) {
 			messageData.put(message, config.getString(message));
 		}
 	}
@@ -399,11 +407,11 @@ public class RealisticBackpacks extends JavaPlugin {
 	private void setup() {
 		user = getConfig().getString("Data.MySQL.username");
 		password = getConfig().getString("Data.MySQL.password");
-		url = "jdbc:mysql://"+getConfig().getString("Data.MySQL.ip")+":"+getConfig().getInt("Data.MySQL.port")+"/"+getConfig().getString("Data.MySQL.database");		
+		url = "jdbc:mysql://" + getConfig().getString("Data.MySQL.ip") + ":" + getConfig().getInt("Data.MySQL.port") + "/" + getConfig().getString("Data.MySQL.database");
 		if (!getConfig().isSet("Config.MultipleBackpacksInInventory.average")) {
 			average = false;
 		} else {
-			average = getConfig().getBoolean("Config.MultipleBackpacksInInventory.average");	
+			average = getConfig().getBoolean("Config.MultipleBackpacksInInventory.average");
 		}
 		if (!getConfig().isSet("Config.MultipleBackpacksInInventory.add")) {
 			add = false;
@@ -419,16 +427,16 @@ public class RealisticBackpacks extends JavaPlugin {
 			}
 		} else {
 			usingMysql = false;
-		}		
-		for (String backpack : backpacks) {			
-			List<String> key = backpackData.get(backpack);
-			String backpackitem = key.get(2);
-			String[] backpackitemSplit = backpackitem.split(":");
+		}
+		for (final String backpack : backpacks) {
+			final List<String> key = backpackData.get(backpack);
+			final String backpackitem = key.get(2);
+			final String[] backpackitemSplit = backpackitem.split(":");
 			Material baseItem;
-			ItemStack backpackItemData;			
+			ItemStack backpackItemData;
 			if (backpackitemSplit.length > 1) {
 				baseItem = Material.getMaterial(Integer.parseInt(backpackitemSplit[0]));
-				backpackItemData = new ItemStack(baseItem, 1, (byte)Integer.parseInt(backpackitemSplit[1]));
+				backpackItemData = new ItemStack(baseItem, 1, (byte) Integer.parseInt(backpackitemSplit[1]));
 				backpackItems.put(backpack, getConfigLore(backpackItemData, backpack));
 			} else {
 				backpackItems.put(backpack, getConfigLore(new ItemStack(Material.getMaterial(Integer.parseInt(backpackitemSplit[0]))), backpack));
@@ -437,37 +445,57 @@ public class RealisticBackpacks extends JavaPlugin {
 			if (key.get(1).equalsIgnoreCase("true")) {
 				if (backpackitemSplit.length > 1) {
 					baseItem = Material.getMaterial(Integer.parseInt(backpackitemSplit[0]));
-					backpackItemData = new ItemStack(baseItem, 1, (byte)Integer.parseInt(backpackitemSplit[1]));
+					backpackItemData = new ItemStack(baseItem, 1, (byte) Integer.parseInt(backpackitemSplit[1]));
 					recipe = new ShapedRecipe(getConfigLore(backpackItemData, backpack));
 				} else {
 					recipe = new ShapedRecipe(getConfigLore(new ItemStack(Material.getMaterial(Integer.parseInt(backpackitemSplit[0]))), backpack));
-				}			
+				}
 				recipe.shape("abc", "def", "ghi");
 				int i = 0;
-				for (String s : backpackRecipe.get(backpack)) {
-					String[] itemIds = s.split(",");
+				for (final String s : backpackRecipe.get(backpack)) {
+					final String[] itemIds = s.split(",");
 					char shapechar = 0;
-					for (String itemid : itemIds) {
+					for (final String itemid : itemIds) {
 						i++;
 						switch (i) {
-						case 1: shapechar = 'a'; break;
-						case 2: shapechar = 'b'; break;
-						case 3: shapechar = 'c'; break;
-						case 4: shapechar = 'd'; break;
-						case 5: shapechar = 'e'; break;
-						case 6: shapechar = 'f'; break;
-						case 7: shapechar = 'g'; break;
-						case 8: shapechar = 'h'; break;
-						case 9: shapechar = 'i'; break;
+						case 1:
+							shapechar = 'a';
+							break;
+						case 2:
+							shapechar = 'b';
+							break;
+						case 3:
+							shapechar = 'c';
+							break;
+						case 4:
+							shapechar = 'd';
+							break;
+						case 5:
+							shapechar = 'e';
+							break;
+						case 6:
+							shapechar = 'f';
+							break;
+						case 7:
+							shapechar = 'g';
+							break;
+						case 8:
+							shapechar = 'h';
+							break;
+						case 9:
+							shapechar = 'i';
+							break;
 						}
-						String[] itemsplit = itemid.split(":");
-						if (itemsplit[0].equals("0")) continue;
+						final String[] itemsplit = itemid.split(":");
+						if (itemsplit[0].equals("0")) {
+							continue;
+						}
 						if (itemsplit.length > 1) {
-							Material baseblock = Material.getMaterial(Integer.parseInt(itemsplit[0]));
-							MaterialData ingredient = new MaterialData(baseblock, (byte)Integer.parseInt(itemsplit[1]));
+							final Material baseblock = Material.getMaterial(Integer.parseInt(itemsplit[0]));
+							final MaterialData ingredient = new MaterialData(baseblock, (byte) Integer.parseInt(itemsplit[1]));
 							recipe.setIngredient(shapechar, ingredient);
 						} else {
-							Material baseblock = Material.getMaterial(Integer.parseInt(itemsplit[0]));
+							final Material baseblock = Material.getMaterial(Integer.parseInt(itemsplit[0]));
 							recipe.setIngredient(shapechar, baseblock);
 						}
 					}
@@ -477,13 +505,13 @@ public class RealisticBackpacks extends JavaPlugin {
 		}
 	}
 
-	public ItemStack getConfigLore(ItemStack item, String backpack) {
-		List<String> key = backpackData.get(backpack);
-		ItemMeta meta = item.getItemMeta();
-		ArrayList<String> lore = new ArrayList<String>();
+	public ItemStack getConfigLore(final ItemStack item, final String backpack) {
+		final List<String> key = backpackData.get(backpack);
+		final ItemMeta meta = item.getItemMeta();
+		final ArrayList<String> lore = new ArrayList<String>();
 		lore.clear();
 		if (backpackLore.get(backpack) != null) {
-			for (String s : backpackLore.get(backpack)) {
+			for (final String s : backpackLore.get(backpack)) {
 				lore.add(ChatColor.translateAlternateColorCodes('&', s));
 			}
 			meta.setLore(lore);

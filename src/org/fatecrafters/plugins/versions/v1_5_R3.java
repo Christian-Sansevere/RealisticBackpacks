@@ -20,26 +20,28 @@ import org.fatecrafters.plugins.RealisticBackpacks;
 public class v1_5_R3 implements RBInterface {
 
 	RealisticBackpacks plugin;
-	public v1_5_R3(RealisticBackpacks rb) {
-		this.plugin=rb;
+
+	public v1_5_R3(final RealisticBackpacks rb) {
+		this.plugin = rb;
 	}
 
 	@Override
-	public String inventoryToString(Inventory inventory) {
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		DataOutputStream dataOutput = new DataOutputStream(outputStream);
-		NBTTagList itemList = new NBTTagList();
+	public String inventoryToString(final Inventory inventory) {
+		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		final DataOutputStream dataOutput = new DataOutputStream(outputStream);
+		final NBTTagList itemList = new NBTTagList();
 		for (int i = 0; i < inventory.getSize(); i++) {
-			NBTTagCompound outputObject = new NBTTagCompound();
+			final NBTTagCompound outputObject = new NBTTagCompound();
 			net.minecraft.server.v1_5_R3.ItemStack craft = null;
-			org.bukkit.inventory.ItemStack is = inventory.getItem(i);
+			final org.bukkit.inventory.ItemStack is = inventory.getItem(i);
 			if (is != null) {
 				craft = CraftItemStack.asNMSCopy(is);
 			} else {
 				craft = null;
 			}
-			if (craft != null)
+			if (craft != null) {
 				craft.save(outputObject);
+			}
 			itemList.add(outputObject);
 		}
 		NBTBase.a(itemList, dataOutput);
@@ -47,13 +49,13 @@ public class v1_5_R3 implements RBInterface {
 	}
 
 	@Override
-	public Inventory stringToInventory(String data, String name) {
-		ByteArrayInputStream inputStream = new ByteArrayInputStream(new BigInteger(data, 32).toByteArray());
-		NBTTagList itemList = (NBTTagList) NBTBase.b(new DataInputStream(inputStream));
-		Inventory inventory = new CraftInventoryCustom(null, itemList.size(), ChatColor.translateAlternateColorCodes('&', name));
+	public Inventory stringToInventory(final String data, final String name) {
+		final ByteArrayInputStream inputStream = new ByteArrayInputStream(new BigInteger(data, 32).toByteArray());
+		final NBTTagList itemList = (NBTTagList) NBTBase.b(new DataInputStream(inputStream));
+		final Inventory inventory = new CraftInventoryCustom(null, itemList.size(), ChatColor.translateAlternateColorCodes('&', name));
 
 		for (int i = 0; i < itemList.size(); i++) {
-			NBTTagCompound inputObject = (NBTTagCompound) itemList.get(i);
+			final NBTTagCompound inputObject = (NBTTagCompound) itemList.get(i);
 			if (!inputObject.isEmpty()) {
 				inventory.setItem(i, CraftItemStack.asBukkitCopy(net.minecraft.server.v1_5_R3.ItemStack.createStack(inputObject)));
 			}

@@ -17,21 +17,22 @@ import org.fatecrafters.plugins.RBInterface;
 import org.fatecrafters.plugins.RealisticBackpacks;
 
 public class preVersioning implements RBInterface {
-	
+
 	RealisticBackpacks plugin;
-	public preVersioning(RealisticBackpacks rb) {
-		this.plugin=rb;
+
+	public preVersioning(final RealisticBackpacks rb) {
+		this.plugin = rb;
 	}
 
 	@Override
-	public String inventoryToString(Inventory inventory) {
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		DataOutputStream dataOutput = new DataOutputStream(outputStream);
-		NBTTagList itemList = new NBTTagList();
+	public String inventoryToString(final Inventory inventory) {
+		final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		final DataOutputStream dataOutput = new DataOutputStream(outputStream);
+		final NBTTagList itemList = new NBTTagList();
 		for (int i = 0; i < inventory.getSize(); i++) {
-			NBTTagCompound outputObject = new NBTTagCompound();
+			final NBTTagCompound outputObject = new NBTTagCompound();
 			CraftItemStack craft = null;
-			org.bukkit.inventory.ItemStack is = inventory.getItem(i);
+			final org.bukkit.inventory.ItemStack is = inventory.getItem(i);
 			if (is instanceof CraftItemStack) {
 				craft = (CraftItemStack) is;
 			} else if (is != null) {
@@ -39,8 +40,9 @@ public class preVersioning implements RBInterface {
 			} else {
 				craft = null;
 			}
-			if (craft != null) 
+			if (craft != null) {
 				craft.getHandle().save(outputObject);
+			}
 			itemList.add(outputObject);
 		}
 		NBTBase.a(itemList, dataOutput);
@@ -48,13 +50,13 @@ public class preVersioning implements RBInterface {
 	}
 
 	@Override
-	public Inventory stringToInventory(String data, String name) {
-		ByteArrayInputStream inputStream = new ByteArrayInputStream(new BigInteger(data, 32).toByteArray());
-		NBTTagList itemList = (NBTTagList) NBTBase.b(new DataInputStream(inputStream));
-		Inventory inventory = new CraftInventoryCustom(null, itemList.size());
+	public Inventory stringToInventory(final String data, final String name) {
+		final ByteArrayInputStream inputStream = new ByteArrayInputStream(new BigInteger(data, 32).toByteArray());
+		final NBTTagList itemList = (NBTTagList) NBTBase.b(new DataInputStream(inputStream));
+		final Inventory inventory = new CraftInventoryCustom(null, itemList.size());
 
 		for (int i = 0; i < itemList.size(); i++) {
-			NBTTagCompound inputObject = (NBTTagCompound) itemList.get(i);
+			final NBTTagCompound inputObject = (NBTTagCompound) itemList.get(i);
 			if (!inputObject.d()) {
 				inventory.setItem(i, new CraftItemStack(net.minecraft.server.ItemStack.a(inputObject)));
 			}

@@ -14,16 +14,16 @@ public class MysqlFunctions {
 
 	private static RealisticBackpacks plugin;
 
-	public static void setMysqlFunc(RealisticBackpacks plugin) {
+	public static void setMysqlFunc(final RealisticBackpacks plugin) {
 		MysqlFunctions.plugin = plugin;
 	}
 
-	public static boolean checkIfTableExists(String table) {
+	public static boolean checkIfTableExists(final String table) {
 		try {
-			Connection conn = DriverManager.getConnection(plugin.getUrl(), plugin.getUser(), plugin.getPass());
-			Statement state = conn.createStatement();
-			DatabaseMetaData dbm = conn.getMetaData();
-			ResultSet tables = dbm.getTables(null, null, "rb_data", null);
+			final Connection conn = DriverManager.getConnection(plugin.getUrl(), plugin.getUser(), plugin.getPass());
+			final Statement state = conn.createStatement();
+			final DatabaseMetaData dbm = conn.getMetaData();
+			final ResultSet tables = dbm.getTables(null, null, "rb_data", null);
 			state.close();
 			conn.close();
 			if (tables.next()) {
@@ -31,7 +31,7 @@ public class MysqlFunctions {
 			} else {
 				return false;
 			}
-		} catch (SQLException e) {
+		} catch (final SQLException e) {
 			e.printStackTrace();
 		}
 		return false;
@@ -39,14 +39,15 @@ public class MysqlFunctions {
 
 	public static void createTables() {
 		plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
+			@Override
 			public void run() {
 				try {
-					Connection conn = DriverManager.getConnection(plugin.getUrl(), plugin.getUser(), plugin.getPass());
-					PreparedStatement state = conn.prepareStatement("CREATE TABLE rb_data (player VARCHAR(16), backpack VARCHAR(20), inventory TEXT);");
+					final Connection conn = DriverManager.getConnection(plugin.getUrl(), plugin.getUser(), plugin.getPass());
+					final PreparedStatement state = conn.prepareStatement("CREATE TABLE rb_data (player VARCHAR(16), backpack VARCHAR(20), inventory TEXT);");
 					state.executeUpdate();
-					state.close(); 
+					state.close();
 					conn.close();
-				} catch (SQLException e) {
+				} catch (final SQLException e) {
 					e.printStackTrace();
 				}
 			}
@@ -55,23 +56,24 @@ public class MysqlFunctions {
 
 	public static void addBackpackData(final String playerName, final String backpack, final Inventory inv) throws SQLException {
 		plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
+			@Override
 			public void run() {
 				try {
-					Connection conn = DriverManager.getConnection(plugin.getUrl(), plugin.getUser(), plugin.getPass());
-					Statement statement = conn.createStatement();
-					ResultSet res = statement.executeQuery("SELECT EXISTS(SELECT 1 FROM rb_data WHERE player = '"+playerName+"' AND backpack = '"+backpack+"' LIMIT 1);");
+					final Connection conn = DriverManager.getConnection(plugin.getUrl(), plugin.getUser(), plugin.getPass());
+					final Statement statement = conn.createStatement();
+					final ResultSet res = statement.executeQuery("SELECT EXISTS(SELECT 1 FROM rb_data WHERE player = '" + playerName + "' AND backpack = '" + backpack + "' LIMIT 1);");
 					PreparedStatement state = null;
 					if (res.next()) {
 						if (res.getInt(1) == 1) {
-							state = conn.prepareStatement("UPDATE rb_data SET player='"+playerName+"', backpack='"+backpack+"', inventory='"+RealisticBackpacks.inter.inventoryToString(inv)+"' WHERE player='"+playerName+"' AND backpack='"+backpack+"';");
+							state = conn.prepareStatement("UPDATE rb_data SET player='" + playerName + "', backpack='" + backpack + "', inventory='" + RealisticBackpacks.inter.inventoryToString(inv) + "' WHERE player='" + playerName + "' AND backpack='" + backpack + "';");
 						} else {
-							state = conn.prepareStatement("INSERT INTO rb_data (player, backpack, inventory) VALUES('"+playerName+"', '"+backpack+"', '"+RealisticBackpacks.inter.inventoryToString(inv)+"' );");
+							state = conn.prepareStatement("INSERT INTO rb_data (player, backpack, inventory) VALUES('" + playerName + "', '" + backpack + "', '" + RealisticBackpacks.inter.inventoryToString(inv) + "' );");
 						}
 					}
 					state.executeUpdate();
 					state.close();
 					conn.close();
-				} catch (SQLException e) {
+				} catch (final SQLException e) {
 					e.printStackTrace();
 				}
 			}
@@ -81,11 +83,11 @@ public class MysqlFunctions {
 	public static Inventory getBackpackInv(final String playerName, final String backpack) throws SQLException {
 		Inventory returnInv = null;
 		try {
-			Connection conn = DriverManager.getConnection(plugin.getUrl(), plugin.getUser(), plugin.getPass());
-			Statement state = conn.createStatement();
-			ResultSet res = state.executeQuery("SELECT inventory FROM rb_data WHERE player='"+playerName+"' AND backpack='"+backpack+"' LIMIT 1;");
+			final Connection conn = DriverManager.getConnection(plugin.getUrl(), plugin.getUser(), plugin.getPass());
+			final Statement state = conn.createStatement();
+			final ResultSet res = state.executeQuery("SELECT inventory FROM rb_data WHERE player='" + playerName + "' AND backpack='" + backpack + "' LIMIT 1;");
 			if (res.next()) {
-				String invString = res.getString(1);
+				final String invString = res.getString(1);
 				if (invString != null) {
 					returnInv = RealisticBackpacks.inter.stringToInventory(invString, plugin.backpackData.get(backpack).get(3));
 				} else {
@@ -94,7 +96,7 @@ public class MysqlFunctions {
 			}
 			state.close();
 			conn.close();
-		} catch (SQLException e) {
+		} catch (final SQLException e) {
 			e.printStackTrace();
 		}
 		return returnInv;
@@ -102,14 +104,15 @@ public class MysqlFunctions {
 
 	public static void delete(final String playerName, final String backpack) {
 		plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
+			@Override
 			public void run() {
 				try {
-					Connection conn = DriverManager.getConnection(plugin.getUrl(), plugin.getUser(), plugin.getPass());
-					PreparedStatement state = conn.prepareStatement("DELETE FROM rb_data WHERE player = '"+playerName+"' AND backpack = '"+backpack+"';");
+					final Connection conn = DriverManager.getConnection(plugin.getUrl(), plugin.getUser(), plugin.getPass());
+					final PreparedStatement state = conn.prepareStatement("DELETE FROM rb_data WHERE player = '" + playerName + "' AND backpack = '" + backpack + "';");
 					state.executeUpdate();
 					state.close();
 					conn.close();
-				} catch (SQLException e) {
+				} catch (final SQLException e) {
 					e.printStackTrace();
 				}
 			}
