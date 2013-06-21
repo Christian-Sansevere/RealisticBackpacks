@@ -3,12 +3,6 @@ package org.fatecrafters.plugins;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -17,19 +11,20 @@ import net.milkbowl.vault.economy.Economy;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.material.MaterialData;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.fatecrafters.plugins.commands.MainCommand;
+import org.fatecrafters.plugins.listeners.CraftListener;
+import org.fatecrafters.plugins.listeners.EntityListener;
+import org.fatecrafters.plugins.listeners.InventoryListener;
+import org.fatecrafters.plugins.listeners.PlayerListener;
 
 public class RealisticBackpacks extends JavaPlugin {
 
@@ -37,11 +32,10 @@ public class RealisticBackpacks extends JavaPlugin {
 
 	public static Economy econ = null;
 
+	private boolean usingMysql = false;
 	private boolean vault = true;
 	private static boolean average = false;
 	private static boolean add = false;
-	private boolean exist = false;
-	private boolean usingMysql = false;
 	private String user = null;
 	private String password = null;
 	private String url;
@@ -52,6 +46,9 @@ public class RealisticBackpacks extends JavaPlugin {
 	public HashMap<String, List<String>> backpackLore = new HashMap<String, List<String>>();
 	public HashMap<String, List<String>> backpackRecipe = new HashMap<String, List<String>>();
 	public HashMap<String, ItemStack> backpackItems = new HashMap<String, ItemStack>();
+
+	public HashMap<String, String> playerData = new HashMap<String, String>();
+	public List<String> slowedPlayers = new ArrayList<String>();
 
 	/*List key ---------
 	 * 0 = Size
@@ -99,7 +96,6 @@ public class RealisticBackpacks extends JavaPlugin {
 		if (this.isEnabled()) {
 			saveDefaultConfig();
 			MysqlFunctions.setMysqlFunc(this);
-			getServer().getPluginManager().registerEvents(new RBListener(this), this);
 			if (!setupEconomy()) {
 				getLogger().info("Vault not found, economy features disabled.");
 				vault = false;
@@ -137,6 +133,11 @@ public class RealisticBackpacks extends JavaPlugin {
 				userdata.mkdirs();
 			}
 			setup();
+			getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
+			getServer().getPluginManager().registerEvents(new CraftListener(this), this);
+			getServer().getPluginManager().registerEvents(new InventoryListener(this), this);
+			getServer().getPluginManager().registerEvents(new EntityListener(this), this);
+			getCommand("rb").setExecutor(new MainCommand(this));
 			getLogger().info("Realistic Backpacks has been enabled.");
 		}
 	}
@@ -146,188 +147,6 @@ public class RealisticBackpacks extends JavaPlugin {
 		HandlerList.unregisterAll(this);
 		getServer().getPluginManager().disablePlugin(this);
 		getLogger().info("Realistic Backpacks has been disabled.");
-	}
-
-	@Override
-	@SuppressWarnings("deprecation")
-	public boolean onCommand(final CommandSender sender, final Command cmd, final String label, final String[] args) {
-		if (cmd.getName().equalsIgnoreCase("rb")) {
-			if (args.length >= 1) {
-				if (args[0].equalsIgnoreCase("reload")) {
-					if (!sender.hasPermission("rb.reload")) {
-						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', messageData.get("noPermission")));
-						return false;
-					}
-					final Long first = System.currentTimeMillis();
-					reloadConfig();
-					setupLists();
-					getServer().resetRecipes();
-					setup();
-					sender.sendMessage(ChatColor.GRAY + "Config reloaded.");
-					sender.sendMessage(ChatColor.GRAY + "Took " + ChatColor.YELLOW + (System.currentTimeMillis() - first) + "ms" + ChatColor.GRAY + ".");
-					return true;
-				} else if (args[0].equalsIgnoreCase("buy") || args[0].equalsIgnoreCase("purchase")) {
-					if (!vault) {
-						sender.sendMessage(ChatColor.RED + "This command is disabled due to Vault not being installed.");
-						return false;
-					}
-					if (!(sender instanceof Player)) {
-						sender.sendMessage(ChatColor.RED + "This command can only be used by a player.");
-						return false;
-					}
-					if (!(args.length == 2)) {
-						sender.sendMessage(ChatColor.RED + "Incorrect syntax. Please use:" + ChatColor.GRAY + " /rb buy <backpack>");
-						return false;
-					}
-					String backpack = args[1];
-					for (final String b : backpacks) {
-						if (b.equalsIgnoreCase(backpack)) {
-							backpack = b;
-						}
-					}
-					if (!backpacks.contains(backpack)) {
-						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', messageData.get("backpackDoesNotExist")));
-						return false;
-					}
-					if (!sender.hasPermission("rb." + backpack + ".buy")) {
-						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', messageData.get("noPermission")));
-						return false;
-					}
-					if (!backpackData.get(backpack).get(13).equals("true")) {
-						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', messageData.get("notPurchasable")));
-						return false;
-					}
-					final double price = Double.parseDouble(backpackData.get(backpack).get(14));
-					if (econ.getBalance(sender.getName()) < price) {
-						sender.sendMessage(ChatColor.RED + "You can not afford " + ChatColor.GOLD + price + ChatColor.RED + " to purchase this backpack.");
-						return false;
-					}
-					final Player p = (Player) sender;
-					if (p.getInventory().contains(backpackItems.get(backpack))) {
-						sender.sendMessage(ChatColor.RED + "You already have this backpack on you!");
-						return false;
-					}
-					final Inventory inv = p.getInventory();
-					if (inv.firstEmpty() != -1) {
-						econ.withdrawPlayer(p.getName(), price);
-						inv.addItem(backpackItems.get(backpack));
-						p.updateInventory();
-						sender.sendMessage(ChatColor.GREEN + "You have purchased the " + ChatColor.GOLD + backpack + ChatColor.GREEN + " backpack for " + ChatColor.GOLD + price);
-						return true;
-					} else {
-						sender.sendMessage(ChatColor.RED + "Your inventory is full.");
-						return false;
-					}
-				} else if (args[0].equalsIgnoreCase("list")) {
-					if (!sender.hasPermission("rb.list")) {
-						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', messageData.get("noPermission")));
-						return false;
-					}
-					sender.sendMessage(ChatColor.LIGHT_PURPLE + "  Name  " + ChatColor.GOLD + "|" + ChatColor.AQUA + "  Size  " + ChatColor.GOLD + "|" + ChatColor.GREEN + "  Price  ");
-					sender.sendMessage(ChatColor.GOLD + "-----------------------------------");
-					for (final String backpack : backpacks) {
-						final boolean hasPerm = sender.hasPermission("rb." + backpack + ".buy");
-						final List<String> key = backpackData.get(backpack);
-						if (backpackData.get(backpack).get(13).equalsIgnoreCase("true") && hasPerm) {
-							sender.sendMessage(ChatColor.LIGHT_PURPLE + backpack + ChatColor.GOLD + " | " + ChatColor.AQUA + key.get(0) + ChatColor.GOLD + " | " + ChatColor.GREEN + Double.parseDouble(key.get(14)));
-						} else if (!backpackData.get(backpack).get(13).equalsIgnoreCase("true") && hasPerm) {
-							sender.sendMessage(ChatColor.LIGHT_PURPLE + backpack + ChatColor.GOLD + " | " + ChatColor.AQUA + key.get(0) + ChatColor.GOLD + " | " + ChatColor.translateAlternateColorCodes('&', messageData.get("listCommandNotBuyable")));
-						} else {
-							sender.sendMessage(ChatColor.LIGHT_PURPLE + backpack + ChatColor.GOLD + " | " + ChatColor.AQUA + key.get(0) + ChatColor.GOLD + " | " + ChatColor.translateAlternateColorCodes('&', messageData.get("listCommandNoPermission")));
-						}
-					}
-				} else if (args[0].equalsIgnoreCase("give")) {
-					if (!(args.length == 3)) {
-						sender.sendMessage(ChatColor.RED + "Incorrect syntax. Please use:" + ChatColor.GRAY + " /rb give <player> <backpack>");
-						return false;
-					}
-					String backpack = args[2];
-					for (final String b : backpacks) {
-						if (b.equalsIgnoreCase(backpack)) {
-							backpack = b;
-						}
-					}
-					if (!sender.hasPermission("rb." + backpack + ".give")) {
-						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', messageData.get("noPermission")));
-						return false;
-					}
-					if (!backpacks.contains(backpack)) {
-						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', messageData.get("backpackDoesNotExist")));
-						return false;
-					}
-					final Player other = getServer().getPlayer(args[1]);
-					if (other == null) {
-						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', messageData.get("playerDoesNotExist")));
-						return false;
-					}
-					final Inventory inv = other.getInventory();
-					if (inv.firstEmpty() != -1) {
-						inv.addItem(backpackItems.get(backpack));
-						other.updateInventory();
-						sender.sendMessage(ChatColor.GREEN + "You have given the " + ChatColor.GOLD + backpack + ChatColor.GREEN + " backpack to " + ChatColor.GOLD + other.getName());
-						return true;
-					} else {
-						sender.sendMessage(ChatColor.RED + "Your inventory is full.");
-						return false;
-					}
-				} else if (args[0].equalsIgnoreCase("filetomysql")) {
-					if (!sender.hasPermission("rb.filetomysql")) {
-						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', messageData.get("noPermission")));
-						return false;
-					}
-					if (!MysqlFunctions.checkIfTableExists("rb_data")) {
-						MysqlFunctions.createTables();
-						exist = false;
-					} else {
-						exist = true;
-					}
-					getServer().getScheduler().runTaskAsynchronously(this, new Runnable() {
-						@Override
-						public void run() {
-							try {
-								final Connection conn = DriverManager.getConnection(url, user, password);
-								final File dir = new File(getDataFolder() + File.separator + "userdata");
-								int i = 0, times = 0;
-								final int files = dir.listFiles().length;
-								for (final File child : dir.listFiles()) {
-									final FileConfiguration config = YamlConfiguration.loadConfiguration(child);
-									final String player = child.getName().replace(".yml", "");
-									i++;
-									final Statement statement = conn.createStatement();
-									PreparedStatement state = null;
-									for (final String backpack : config.getConfigurationSection("").getKeys(false)) {
-										if (exist) {
-											final ResultSet res = statement.executeQuery("SELECT EXISTS(SELECT 1 FROM rb_data WHERE player = '" + player + "' AND backpack = '" + backpack + "' LIMIT 1);");
-											if (res.next()) {
-												if (res.getInt(1) == 1) {
-													state = conn.prepareStatement("UPDATE rb_data SET player='" + player + "', backpack='" + backpack + "', inventory='" + config.getString(backpack + ".Inventory") + "' WHERE player='" + player + "' AND backpack='" + backpack + "';");
-												} else {
-													state = conn.prepareStatement("INSERT INTO rb_data (player, backpack, inventory) VALUES('" + player + "', '" + backpack + "', '" + config.getString(backpack + ".Inventory") + "' );");
-												}
-											}
-										} else {
-											state = conn.prepareStatement("INSERT INTO rb_data (player, backpack, inventory) VALUES('" + player + "', '" + backpack + "', '" + config.getString(backpack + ".Inventory") + "' );");
-										}
-										state.executeUpdate();
-										state.close();
-									}
-									if (i == 100) {
-										i = 0;
-										times++;
-										sender.sendMessage(ChatColor.LIGHT_PURPLE + "" + times * 100 + "/" + files + " files have been transferred.");
-									}
-								}
-								conn.close();
-								sender.sendMessage(ChatColor.LIGHT_PURPLE + "File transfer complete.");
-							} catch (final SQLException e) {
-								e.printStackTrace();
-							}
-						}
-					});
-				}
-			}
-		}
-		return false;
 	}
 
 	private boolean setupEconomy() {
@@ -361,7 +180,7 @@ public class RealisticBackpacks extends JavaPlugin {
 		}
 	}
 
-	private void setupLists() {
+	public void setupLists() {
 		backpacks.clear();
 		backpackRecipe.clear();
 		backpackData.clear();
@@ -404,7 +223,7 @@ public class RealisticBackpacks extends JavaPlugin {
 		}
 	}
 
-	private void setup() {
+	public void setup() {
 		user = getConfig().getString("Data.MySQL.username");
 		password = getConfig().getString("Data.MySQL.password");
 		url = "jdbc:mysql://" + getConfig().getString("Data.MySQL.ip") + ":" + getConfig().getInt("Data.MySQL.port") + "/" + getConfig().getString("Data.MySQL.database");
@@ -531,6 +350,10 @@ public class RealisticBackpacks extends JavaPlugin {
 
 	public boolean isUsingMysql() {
 		return usingMysql;
+	}
+
+	public boolean isUsingVault() {
+		return vault;
 	}
 
 	public String getUser() {

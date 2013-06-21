@@ -53,7 +53,6 @@ public class v1_5_R3 implements RBInterface {
 		final ByteArrayInputStream inputStream = new ByteArrayInputStream(new BigInteger(data, 32).toByteArray());
 		final NBTTagList itemList = (NBTTagList) NBTBase.b(new DataInputStream(inputStream));
 		final Inventory inventory = new CraftInventoryCustom(null, itemList.size(), ChatColor.translateAlternateColorCodes('&', name));
-
 		for (int i = 0; i < itemList.size(); i++) {
 			final NBTTagCompound inputObject = (NBTTagCompound) itemList.get(i);
 			if (!inputObject.isEmpty()) {
