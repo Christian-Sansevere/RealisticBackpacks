@@ -1,4 +1,4 @@
-package org.fatecrafters.plugins.commands;
+package org.fatecrafters.plugins;
 
 import java.io.File;
 import java.sql.Connection;
@@ -35,7 +35,8 @@ public class MainCommand implements CommandExecutor {
 	public boolean onCommand(final CommandSender sender, final Command cmd, final String label, final String[] args) {
 		if (cmd.getName().equalsIgnoreCase("rb")) {
 			if (args.length >= 1) {
-				if (args[0].equalsIgnoreCase("reload")) {
+				final String command = args[0];
+				if (command.equalsIgnoreCase("reload")) {
 					if (!sender.hasPermission("rb.reload")) {
 						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("noPermission")));
 						return false;
@@ -48,7 +49,7 @@ public class MainCommand implements CommandExecutor {
 					sender.sendMessage(ChatColor.GRAY + "Config reloaded.");
 					sender.sendMessage(ChatColor.GRAY + "Took " + ChatColor.YELLOW + (System.currentTimeMillis() - first) + "ms" + ChatColor.GRAY + ".");
 					return true;
-				} else if (args[0].equalsIgnoreCase("buy") || args[0].equalsIgnoreCase("purchase")) {
+				} else if (command.equalsIgnoreCase("buy") || command.equalsIgnoreCase("purchase")) {
 					if (!plugin.isUsingVault()) {
 						sender.sendMessage(ChatColor.RED + "This command is disabled due to Vault not being installed.");
 						return false;
@@ -100,7 +101,7 @@ public class MainCommand implements CommandExecutor {
 						sender.sendMessage(ChatColor.RED + "Your inventory is full.");
 						return false;
 					}
-				} else if (args[0].equalsIgnoreCase("list")) {
+				} else if (command.equalsIgnoreCase("list")) {
 					if (!sender.hasPermission("rb.list")) {
 						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("noPermission")));
 						return false;
@@ -118,7 +119,7 @@ public class MainCommand implements CommandExecutor {
 							sender.sendMessage(ChatColor.LIGHT_PURPLE + backpack + ChatColor.GOLD + " | " + ChatColor.AQUA + key.get(0) + ChatColor.GOLD + " | " + ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("listCommandNoPermission")));
 						}
 					}
-				} else if (args[0].equalsIgnoreCase("give")) {
+				} else if (command.equalsIgnoreCase("give")) {
 					if (!(args.length == 3)) {
 						sender.sendMessage(ChatColor.RED + "Incorrect syntax. Please use:" + ChatColor.GRAY + " /rb give <player> <backpack>");
 						return false;
@@ -152,20 +153,20 @@ public class MainCommand implements CommandExecutor {
 						sender.sendMessage(ChatColor.RED + "Your inventory is full.");
 						return false;
 					}
-				} else if (args[0].equalsIgnoreCase("filetomysql")) {
+				} else if (command.equalsIgnoreCase("filetomysql")) {
 					if (!sender.hasPermission("rb.filetomysql")) {
 						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("noPermission")));
 						return false;
 					}
-					if (!MysqlFunctions.checkIfTableExists("rb_data")) {
-						MysqlFunctions.createTables();
-						exist = false;
-					} else {
-						exist = true;
-					}
 					plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
 						@Override
 						public void run() {
+							if (!MysqlFunctions.checkIfTableExists("rb_data")) {
+								MysqlFunctions.createTables();
+								exist = false;
+							} else {
+								exist = true;
+							}
 							try {
 								final Connection conn = DriverManager.getConnection(plugin.getUrl(), plugin.getUser(), plugin.getPass());
 								final File dir = new File(plugin.getDataFolder() + File.separator + "userdata");
@@ -206,6 +207,8 @@ public class MainCommand implements CommandExecutor {
 							}
 						}
 					});
+				} else {
+					sender.sendMessage(ChatColor.RED + "Command not found.");
 				}
 			}
 		}

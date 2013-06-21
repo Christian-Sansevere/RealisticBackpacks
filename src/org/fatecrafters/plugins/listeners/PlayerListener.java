@@ -38,25 +38,6 @@ public class PlayerListener implements Listener {
 		this.plugin = plugin;
 	}
 
-	/*List key ---------
-	 * 0 = Size
-	 * 1 = UseRecipe
-	 * 2 = id
-	 * 3 = name
-	 * 4 = destroyContents
-	 * 5 = dropContents
-	 * 6 = dropBackpack
-	 * 7 = keepBackpack
-	 * 8 = walkSpeedEnabled
-	 * 9 = walkSpeedMultiplier
-	 * 10 = increasedHungerEnabled
-	 * 11 = hungerBarsToDeplete
-	 * 12 = hungerBarsToSubtractWhenEating
-	 * 13 = Purchasable
-	 * 14 = Price
-	 * 15 = OpenWith
-	 */
-
 	@SuppressWarnings("deprecation")
 	@EventHandler(priority = EventPriority.NORMAL)
 	public void onRightClick(final PlayerInteractEvent e) {

@@ -20,7 +20,6 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.material.MaterialData;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.fatecrafters.plugins.commands.MainCommand;
 import org.fatecrafters.plugins.listeners.CraftListener;
 import org.fatecrafters.plugins.listeners.EntityListener;
 import org.fatecrafters.plugins.listeners.InventoryListener;
