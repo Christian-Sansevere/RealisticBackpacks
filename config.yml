@@ -13,6 +13,7 @@ Config:
 Backpacks:
   exampleBackpack:
     Size: 18
+    OpenWith: right_click
     Purchasable: true
     Price: 2000
     UseRecipe: true
