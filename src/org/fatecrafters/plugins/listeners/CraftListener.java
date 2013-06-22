@@ -23,17 +23,14 @@ public class CraftListener implements Listener {
 	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
 	public void onPrepareCraft(final PrepareItemCraftEvent e) {
 		final ItemStack result = e.getInventory().getResult();
-		if (result.hasItemMeta()) {
+		if (!plugin.isUsingPerms()) {
+			return;
+		}
+		final HumanEntity human = e.getView().getPlayer();
+		if (result.hasItemMeta() && result.getItemMeta().hasDisplayName() && human instanceof Player) {
 			for (final String backpack : plugin.backpacks) {
 				final List<String> key = plugin.backpackData.get(backpack);
-				if (!result.hasItemMeta()) {
-					continue;
-				}
 				if (!result.getItemMeta().getDisplayName().equals(ChatColor.translateAlternateColorCodes('&', key.get(3)))) {
-					continue;
-				}
-				final HumanEntity human = e.getView().getPlayer();
-				if (!(human instanceof Player)) {
 					continue;
 				}
 				if (!human.hasPermission("rb." + backpack + ".craft")) {

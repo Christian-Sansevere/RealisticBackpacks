@@ -1,7 +1,6 @@
 package org.fatecrafters.plugins.listeners;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import org.bukkit.entity.Player;
@@ -11,6 +10,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.inventory.Inventory;
 import org.fatecrafters.plugins.RealisticBackpacks;
+import org.fatecrafters.plugins.util.RBUtil;
 
 public class EntityListener implements Listener {
 
@@ -47,13 +47,13 @@ public class EntityListener implements Listener {
 					if (listsize > 0) {
 						if (pLevel > foodlevel) {
 							//Starving
-							setlevel = getFoodLevel(foodlevel, pLevel, listsize, 11, backpackList);
+							setlevel = RBUtil.getFoodLevel(foodlevel, pLevel, listsize, 11, backpackList);
 							if (setlevel < 0) {
 								setlevel = 0;
 							}
 						} else {
 							//Ate food
-							setlevel = getFoodLevel(foodlevel, pLevel, listsize, 12, backpackList);
+							setlevel = RBUtil.getFoodLevel(foodlevel, pLevel, listsize, 12, backpackList);
 							if (setlevel < pLevel) {
 								setlevel = pLevel;
 							}
@@ -69,31 +69,6 @@ public class EntityListener implements Listener {
 				}
 			});
 		}
-	}
-
-	private int getFoodLevel(final int foodlevel, final int pLevel, final int listsize, final int key, final List<String> backpackList) {
-		int i = 0;
-		//Starving
-		if (plugin.isAveraging()) {
-			int average = 0;
-			for (final String backpack : backpackList) {
-				average += Integer.parseInt(plugin.backpackData.get(backpack).get(key));
-			}
-			i = foodlevel - (average / listsize);
-		} else if (plugin.isAdding()) {
-			int sum = 0;
-			for (final String backpack : backpackList) {
-				sum += Integer.parseInt(plugin.backpackData.get(backpack).get(key));
-			}
-			i = foodlevel - sum;
-		} else {
-			final List<Integer> list = new ArrayList<Integer>();
-			for (final String backpack : backpackList) {
-				list.add(Integer.parseInt(plugin.backpackData.get(backpack).get(key)));
-			}
-			i = foodlevel - Collections.max(list);
-		}
-		return i;
 	}
 
 }

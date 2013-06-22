@@ -14,8 +14,8 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.fatecrafters.plugins.MysqlFunctions;
 import org.fatecrafters.plugins.RealisticBackpacks;
+import org.fatecrafters.plugins.util.MysqlFunctions;
 
 public class InventoryListener implements Listener {
 

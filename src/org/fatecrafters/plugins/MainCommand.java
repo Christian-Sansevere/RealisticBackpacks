@@ -17,8 +17,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
-import org.fatecrafters.plugins.MysqlFunctions;
-import org.fatecrafters.plugins.RealisticBackpacks;
+import org.fatecrafters.plugins.util.MysqlFunctions;
 
 public class MainCommand implements CommandExecutor {
 
@@ -37,7 +36,7 @@ public class MainCommand implements CommandExecutor {
 			if (args.length >= 1) {
 				final String command = args[0];
 				if (command.equalsIgnoreCase("reload")) {
-					if (!sender.hasPermission("rb.reload")) {
+					if (plugin.isUsingPerms() && !sender.hasPermission("rb.reload")) {
 						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("noPermission")));
 						return false;
 					}
@@ -72,7 +71,7 @@ public class MainCommand implements CommandExecutor {
 						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("backpackDoesNotExist")));
 						return false;
 					}
-					if (!sender.hasPermission("rb." + backpack + ".buy")) {
+					if (plugin.isUsingPerms() && !sender.hasPermission("rb." + backpack + ".buy")) {
 						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("noPermission")));
 						return false;
 					}
@@ -102,21 +101,32 @@ public class MainCommand implements CommandExecutor {
 						return false;
 					}
 				} else if (command.equalsIgnoreCase("list")) {
-					if (!sender.hasPermission("rb.list")) {
+					if (plugin.isUsingPerms() && !sender.hasPermission("rb.list")) {
 						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("noPermission")));
 						return false;
 					}
 					sender.sendMessage(ChatColor.LIGHT_PURPLE + "  Name  " + ChatColor.GOLD + "|" + ChatColor.AQUA + "  Size  " + ChatColor.GOLD + "|" + ChatColor.GREEN + "  Price  ");
 					sender.sendMessage(ChatColor.GOLD + "-----------------------------------");
-					for (final String backpack : plugin.backpacks) {
-						final boolean hasPerm = sender.hasPermission("rb." + backpack + ".buy");
-						final List<String> key = plugin.backpackData.get(backpack);
-						if (plugin.backpackData.get(backpack).get(13).equalsIgnoreCase("true") && hasPerm) {
-							sender.sendMessage(ChatColor.LIGHT_PURPLE + backpack + ChatColor.GOLD + " | " + ChatColor.AQUA + key.get(0) + ChatColor.GOLD + " | " + ChatColor.GREEN + Double.parseDouble(key.get(14)));
-						} else if (!plugin.backpackData.get(backpack).get(13).equalsIgnoreCase("true") && hasPerm) {
-							sender.sendMessage(ChatColor.LIGHT_PURPLE + backpack + ChatColor.GOLD + " | " + ChatColor.AQUA + key.get(0) + ChatColor.GOLD + " | " + ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("listCommandNotBuyable")));
-						} else {
-							sender.sendMessage(ChatColor.LIGHT_PURPLE + backpack + ChatColor.GOLD + " | " + ChatColor.AQUA + key.get(0) + ChatColor.GOLD + " | " + ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("listCommandNoPermission")));
+					if (plugin.isUsingPerms()) {
+						for (final String backpack : plugin.backpacks) {
+							final boolean hasPerm = sender.hasPermission("rb." + backpack + ".buy");
+							final List<String> key = plugin.backpackData.get(backpack);
+							if (plugin.backpackData.get(backpack).get(13).equalsIgnoreCase("true") && hasPerm) {
+								sender.sendMessage(ChatColor.LIGHT_PURPLE + backpack + ChatColor.GOLD + " | " + ChatColor.AQUA + key.get(0) + ChatColor.GOLD + " | " + ChatColor.GREEN + Double.parseDouble(key.get(14)));
+							} else if (!plugin.backpackData.get(backpack).get(13).equalsIgnoreCase("true") && hasPerm) {
+								sender.sendMessage(ChatColor.LIGHT_PURPLE + backpack + ChatColor.GOLD + " | " + ChatColor.AQUA + key.get(0) + ChatColor.GOLD + " | " + ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("listCommandNotBuyable")));
+							} else {
+								sender.sendMessage(ChatColor.LIGHT_PURPLE + backpack + ChatColor.GOLD + " | " + ChatColor.AQUA + key.get(0) + ChatColor.GOLD + " | " + ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("listCommandNoPermission")));
+							}
+						}
+					} else {
+						for (final String backpack : plugin.backpacks) {
+							final List<String> key = plugin.backpackData.get(backpack);
+							if (plugin.backpackData.get(backpack).get(13).equalsIgnoreCase("true")) {
+								sender.sendMessage(ChatColor.LIGHT_PURPLE + backpack + ChatColor.GOLD + " | " + ChatColor.AQUA + key.get(0) + ChatColor.GOLD + " | " + ChatColor.GREEN + Double.parseDouble(key.get(14)));
+							} else {
+								sender.sendMessage(ChatColor.LIGHT_PURPLE + backpack + ChatColor.GOLD + " | " + ChatColor.AQUA + key.get(0) + ChatColor.GOLD + " | " + ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("listCommandNotBuyable")));
+							}
 						}
 					}
 				} else if (command.equalsIgnoreCase("give")) {
@@ -130,7 +140,7 @@ public class MainCommand implements CommandExecutor {
 							backpack = b;
 						}
 					}
-					if (!sender.hasPermission("rb." + backpack + ".give")) {
+					if (plugin.isUsingPerms() && !sender.hasPermission("rb." + backpack + ".give")) {
 						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("noPermission")));
 						return false;
 					}
@@ -154,7 +164,7 @@ public class MainCommand implements CommandExecutor {
 						return false;
 					}
 				} else if (command.equalsIgnoreCase("filetomysql")) {
-					if (!sender.hasPermission("rb.filetomysql")) {
+					if (plugin.isUsingPerms() && !sender.hasPermission("rb.filetomysql")) {
 						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("noPermission")));
 						return false;
 					}

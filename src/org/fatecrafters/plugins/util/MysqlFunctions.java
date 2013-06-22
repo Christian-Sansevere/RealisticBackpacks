@@ -1,4 +1,4 @@
-package org.fatecrafters.plugins;
+package org.fatecrafters.plugins.util;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -9,6 +9,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 import org.bukkit.inventory.Inventory;
+import org.fatecrafters.plugins.RealisticBackpacks;
 
 public class MysqlFunctions {
 

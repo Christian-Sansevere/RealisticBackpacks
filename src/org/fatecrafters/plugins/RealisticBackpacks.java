@@ -24,6 +24,8 @@ import org.fatecrafters.plugins.listeners.CraftListener;
 import org.fatecrafters.plugins.listeners.EntityListener;
 import org.fatecrafters.plugins.listeners.InventoryListener;
 import org.fatecrafters.plugins.listeners.PlayerListener;
+import org.fatecrafters.plugins.util.MysqlFunctions;
+import org.fatecrafters.plugins.util.RBUtil;
 
 public class RealisticBackpacks extends JavaPlugin {
 
@@ -33,6 +35,7 @@ public class RealisticBackpacks extends JavaPlugin {
 
 	private boolean usingMysql = false;
 	private boolean vault = true;
+	private boolean usingPermissions = true;
 	private static boolean average = false;
 	private static boolean add = false;
 	private String user = null;
@@ -92,9 +95,10 @@ public class RealisticBackpacks extends JavaPlugin {
 			getLogger().severe("**********************************************************");
 			setEnabled(false);
 		}
-		if (this.isEnabled()) {
+		if (isEnabled()) {
 			saveDefaultConfig();
 			MysqlFunctions.setMysqlFunc(this);
+			RBUtil.setRBUtil(this);
 			if (!setupEconomy()) {
 				getLogger().info("Vault not found, economy features disabled.");
 				vault = false;
@@ -124,6 +128,7 @@ public class RealisticBackpacks extends JavaPlugin {
 			setConfig("Data.MySQL.password", "pass");
 			setConfig("Data.MySQL.ip", "localhost");
 			setConfig("Data.MySQL.port", 3306);
+			setConfig("Config.usePermissions", true);
 			saveConfig();
 			reloadConfig();
 			setupLists();
@@ -246,6 +251,11 @@ public class RealisticBackpacks extends JavaPlugin {
 		} else {
 			usingMysql = false;
 		}
+		if (!getConfig().isSet("Config.usePermissions")) {
+			usingPermissions = true;
+		} else {
+			usingPermissions = getConfig().getBoolean("Config.usePermissions");
+		}
 		for (final String backpack : backpacks) {
 			final List<String> key = backpackData.get(backpack);
 			final String backpackitem = key.get(2);
@@ -353,6 +363,10 @@ public class RealisticBackpacks extends JavaPlugin {
 
 	public boolean isUsingVault() {
 		return vault;
+	}
+
+	public boolean isUsingPerms() {
+		return usingPermissions;
 	}
 
 	public String getUser() {

@@ -24,8 +24,9 @@ import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.fatecrafters.plugins.MysqlFunctions;
 import org.fatecrafters.plugins.RealisticBackpacks;
+import org.fatecrafters.plugins.util.MysqlFunctions;
+import org.fatecrafters.plugins.util.RBUtil;
 
 public class PlayerListener implements Listener {
 
@@ -47,6 +48,10 @@ public class PlayerListener implements Listener {
 		final String name = p.getName();
 		if (item.hasItemMeta()) {
 			for (final String backpack : plugin.backpacks) {
+				if (plugin.isUsingPerms() && !p.hasPermission("rb." + backpack + ".use")) {
+					p.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("openBackpackPermError")));
+					continue;
+				}
 				final List<String> key = plugin.backpackData.get(backpack);
 				if (item.getItemMeta().hasDisplayName() && item.getItemMeta().getDisplayName().equals(ChatColor.translateAlternateColorCodes('&', key.get(3)))) {
 					final String openWith = key.get(15);
@@ -73,10 +78,6 @@ public class PlayerListener implements Listener {
 						if (act.equals(Action.LEFT_CLICK_BLOCK)) {
 							continue;
 						}
-					}
-					if (!p.hasPermission("rb." + backpack + ".use")) {
-						p.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("openBackpackPermError")));
-						continue;
 					}
 					if (act.equals(Action.RIGHT_CLICK_BLOCK)) {
 						e.setCancelled(true);
@@ -228,9 +229,6 @@ public class PlayerListener implements Listener {
 		final Player p = e.getEntity();
 		final String name = p.getName();
 		for (final String backpack : plugin.backpacks) {
-			if (p.hasPermission("rb." + backpack + ".deathbypass")) {
-				continue;
-			}
 			if (!p.getInventory().contains(plugin.backpackItems.get(backpack))) {
 				continue;
 			}
@@ -263,26 +261,11 @@ public class PlayerListener implements Listener {
 						}
 					}
 				}
+				RBUtil.destroyContents(name, backpack);
 			}
 			if (key.get(4) != null && key.get(4).equals("true")) {
 				//Destroy contents
-				plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
-					@Override
-					public void run() {
-						if (plugin.isUsingMysql()) {
-							MysqlFunctions.delete(name, backpack);
-						} else {
-							final File file = new File(plugin.getDataFolder() + File.separator + "userdata" + File.separator + name + ".yml");
-							final FileConfiguration config = YamlConfiguration.loadConfiguration(file);
-							config.set(backpack + ".Inventory", null);
-							try {
-								config.save(file);
-							} catch (final IOException e1) {
-								e1.printStackTrace();
-							}
-						}
-					}
-				});
+				RBUtil.destroyContents(name, backpack);
 				p.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("contentsDestroyed")));
 			}
 			if (key.get(6) != null && key.get(6).equals("false")) {

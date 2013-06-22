@@ -7,6 +7,7 @@ Data:
     ip: localhost
     port: 3306
 Config:
+  UsePermissions: true
   MultipleBackpacksInInventory:
     average: false
     add: true
