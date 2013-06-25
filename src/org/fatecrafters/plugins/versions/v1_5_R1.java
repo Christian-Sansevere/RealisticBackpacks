@@ -4,23 +4,23 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.math.BigInteger;
 
-import net.minecraft.server.v1_4_R1.NBTBase;
-import net.minecraft.server.v1_4_R1.NBTTagCompound;
-import net.minecraft.server.v1_4_R1.NBTTagList;
+import net.minecraft.server.v1_5_R1.NBTBase;
+import net.minecraft.server.v1_5_R1.NBTTagCompound;
+import net.minecraft.server.v1_5_R1.NBTTagList;
 
-import org.bukkit.craftbukkit.v1_4_R1.inventory.CraftInventoryCustom;
-import org.bukkit.craftbukkit.v1_4_R1.inventory.CraftItemStack;
+import org.bukkit.craftbukkit.v1_5_R1.inventory.CraftInventoryCustom;
+import org.bukkit.craftbukkit.v1_5_R1.inventory.CraftItemStack;
 import org.bukkit.inventory.Inventory;
 import org.fatecrafters.plugins.RBInterface;
 import org.fatecrafters.plugins.RealisticBackpacks;
-import org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder;
 
-public class v1_4_R1 implements RBInterface {
+public class v1_5_R1 implements RBInterface {
 
 	RealisticBackpacks plugin;
 
-	public v1_4_R1(final RealisticBackpacks rb) {
+	public v1_5_R1(final RealisticBackpacks rb) {
 		this.plugin = rb;
 	}
 
@@ -31,34 +31,31 @@ public class v1_4_R1 implements RBInterface {
 		final NBTTagList itemList = new NBTTagList();
 		for (int i = 0; i < inventory.getSize(); i++) {
 			final NBTTagCompound outputObject = new NBTTagCompound();
-			CraftItemStack craft = null;
+			net.minecraft.server.v1_5_R1.ItemStack craft = null;
 			final org.bukkit.inventory.ItemStack is = inventory.getItem(i);
-			if (is instanceof CraftItemStack) {
-				craft = (CraftItemStack) is;
-			} else if (is != null) {
-				craft = CraftItemStack.asCraftCopy(is);
+			if (is != null) {
+				craft = CraftItemStack.asNMSCopy(is);
 			} else {
 				craft = null;
 			}
 			if (craft != null) {
-				CraftItemStack.asNMSCopy(craft).save(outputObject);
+				craft.save(outputObject);
 			}
 			itemList.add(outputObject);
 		}
 		NBTBase.a(itemList, dataOutput);
-		return Base64Coder.encodeLines(outputStream.toByteArray());
+		return new BigInteger(1, outputStream.toByteArray()).toString(32);
 	}
 
 	@Override
 	public Inventory stringToInventory(final String data, final String name) {
-		final ByteArrayInputStream inputStream = new ByteArrayInputStream(Base64Coder.decodeLines(data));
+		final ByteArrayInputStream inputStream = new ByteArrayInputStream(new BigInteger(data, 32).toByteArray());
 		final NBTTagList itemList = (NBTTagList) NBTBase.b(new DataInputStream(inputStream));
 		final Inventory inventory = new CraftInventoryCustom(null, itemList.size());
-
 		for (int i = 0; i < itemList.size(); i++) {
 			final NBTTagCompound inputObject = (NBTTagCompound) itemList.get(i);
 			if (!inputObject.isEmpty()) {
-				inventory.setItem(i, CraftItemStack.asCraftMirror(net.minecraft.server.v1_4_R1.ItemStack.createStack(inputObject)));
+				inventory.setItem(i, CraftItemStack.asBukkitCopy(net.minecraft.server.v1_5_R1.ItemStack.createStack(inputObject)));
 			}
 		}
 		return inventory;
