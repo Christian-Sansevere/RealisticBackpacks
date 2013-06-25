@@ -23,6 +23,12 @@ public class CraftListener implements Listener {
 	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
 	public void onPrepareCraft(final PrepareItemCraftEvent e) {
 		final ItemStack result = e.getInventory().getResult();
+		for (final String backpack : plugin.backpacks) {
+			if (plugin.backpackOverrides.get(backpack) != null && result.equals(plugin.backpackOverrides.get(backpack))) {
+				e.getInventory().setResult(plugin.backpackItems.get(backpack));
+				break;
+			}
+		}
 		if (!plugin.isUsingPerms()) {
 			return;
 		}
@@ -36,6 +42,7 @@ public class CraftListener implements Listener {
 				if (!human.hasPermission("rb." + backpack + ".craft")) {
 					e.getInventory().setResult(null);
 					((Player) human).sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("craftPermError")));
+					break;
 				}
 			}
 		}

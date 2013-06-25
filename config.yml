@@ -18,6 +18,7 @@ Backpacks:
     Purchasable: true
     Price: 2000
     UseRecipe: true
+    Override: '0'
     Recipe:
       - '334,334,334'
       - '334,35:12,334'

@@ -111,6 +111,7 @@ public class PlayerListener implements Listener {
 					}
 					plugin.playerData.put(name, backpack);
 					p.openInventory(inv);
+					break;
 				}
 			}
 		}
@@ -134,6 +135,7 @@ public class PlayerListener implements Listener {
 									p.setWalkSpeed(0.2F);
 								}
 							});
+							break;
 						}
 					}
 				}
@@ -163,6 +165,7 @@ public class PlayerListener implements Listener {
 							p.setWalkSpeed(Float.parseFloat(key.get(9)));
 						}
 					});
+					break;
 				}
 			}
 		});

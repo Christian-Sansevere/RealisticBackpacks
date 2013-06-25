@@ -48,6 +48,7 @@ public class RealisticBackpacks extends JavaPlugin {
 	public HashMap<String, List<String>> backpackLore = new HashMap<String, List<String>>();
 	public HashMap<String, List<String>> backpackRecipe = new HashMap<String, List<String>>();
 	public HashMap<String, ItemStack> backpackItems = new HashMap<String, ItemStack>();
+	public HashMap<String, ItemStack> backpackOverrides = new HashMap<String, ItemStack>();
 
 	public HashMap<String, String> playerData = new HashMap<String, String>();
 	public List<String> slowedPlayers = new ArrayList<String>();
@@ -89,10 +90,10 @@ public class RealisticBackpacks extends JavaPlugin {
 				inter = (RBInterface) obj;
 			}
 		} catch (final Exception e) {
-			getLogger().severe("**********************************************************");
+			getLogger().severe("* ! * ! * !* ! * ! * ! * ! * !* ! * ! * ! *");
 			getLogger().severe("This version of craftbukkit is not supported, please contact the developer stating this version: " + version);
 			getLogger().severe("RealisticBackpacks will now disable.");
-			getLogger().severe("**********************************************************");
+			getLogger().severe("* ! * ! * !* ! * ! * ! * ! * !* ! * ! * ! *");
 			setEnabled(false);
 		}
 		if (isEnabled()) {
@@ -257,18 +258,34 @@ public class RealisticBackpacks extends JavaPlugin {
 			usingPermissions = getConfig().getBoolean("Config.usePermissions");
 		}
 		for (final String backpack : backpacks) {
+
 			final List<String> key = backpackData.get(backpack);
 			final String backpackitem = key.get(2);
 			final String[] backpackitemSplit = backpackitem.split(":");
-			Material baseItem;
+			Material baseItem = Material.getMaterial(Integer.parseInt(backpackitemSplit[0]));
 			ItemStack backpackItemData;
 			if (backpackitemSplit.length > 1) {
-				baseItem = Material.getMaterial(Integer.parseInt(backpackitemSplit[0]));
 				backpackItemData = new ItemStack(baseItem, 1, (byte) Integer.parseInt(backpackitemSplit[1]));
 				backpackItems.put(backpack, getConfigLore(backpackItemData, backpack));
 			} else {
 				backpackItems.put(backpack, getConfigLore(new ItemStack(Material.getMaterial(Integer.parseInt(backpackitemSplit[0]))), backpack));
 			}
+
+			final String override = getConfig().getString("Backpacks." + backpack + ".Override");
+			if (override != null && Integer.parseInt(override) != 0) {
+				final String[] overrideSplit = override.split(":");
+				final Material overrideItem = Material.getMaterial(Integer.parseInt(overrideSplit[0]));
+				ItemStack overrideItemData;
+				if (overrideSplit.length > 1) {
+					overrideItemData = new ItemStack(overrideItem, 1, (byte) Integer.parseInt(overrideSplit[1]));
+					backpackOverrides.put(backpack, overrideItemData);
+				} else {
+					backpackOverrides.put(backpack, new ItemStack(overrideItem));
+				}
+			} else {
+				backpackOverrides.put(backpack, null);
+			}
+
 			ShapedRecipe recipe = null;
 			if (key.get(1).equalsIgnoreCase("true")) {
 				if (backpackitemSplit.length > 1) {
