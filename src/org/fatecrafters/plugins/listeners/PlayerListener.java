@@ -48,12 +48,12 @@ public class PlayerListener implements Listener {
 		final String name = p.getName();
 		if (item.hasItemMeta()) {
 			for (final String backpack : plugin.backpacks) {
-				if (plugin.isUsingPerms() && !p.hasPermission("rb." + backpack + ".use")) {
-					p.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("openBackpackPermError")));
-					continue;
-				}
 				final List<String> key = plugin.backpackData.get(backpack);
 				if (item.getItemMeta().hasDisplayName() && item.getItemMeta().getDisplayName().equals(ChatColor.translateAlternateColorCodes('&', key.get(3)))) {
+					if (plugin.isUsingPerms() && !p.hasPermission("rb." + backpack + ".use")) {
+						p.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("openBackpackPermError")));
+						continue;
+					}
 					final String openWith = key.get(15);
 					if (openWith != null) {
 						if (openWith.equalsIgnoreCase("left_click")) {
@@ -106,7 +106,7 @@ public class PlayerListener implements Listener {
 						if (config.getString(backpack + ".Inventory") == null) {
 							inv = plugin.getServer().createInventory(p, Integer.parseInt(key.get(0)), ChatColor.translateAlternateColorCodes('&', key.get(3)));
 						} else {
-							inv = RealisticBackpacks.inter.stringToInventory(config.getString(backpack + ".Inventory"), key.get(3));
+							inv = RealisticBackpacks.NMS.stringToInventory(config.getString(backpack + ".Inventory"), key.get(3));
 						}
 					}
 					plugin.playerData.put(name, backpack);
@@ -175,6 +175,10 @@ public class PlayerListener implements Listener {
 	public void onMove(final PlayerMoveEvent e) {
 		final Player p = e.getPlayer();
 		final String name = p.getName();
+		if (plugin.slowedPlayers.contains(name)) {
+			return;
+		}
+
 		final Inventory inv = p.getInventory();
 		plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
 			@Override
@@ -213,9 +217,7 @@ public class PlayerListener implements Listener {
 							walkSpeedMultiplier = Float.parseFloat(plugin.backpackData.get(backpack).get(9));
 						}
 					}
-					if (!plugin.slowedPlayers.contains(name)) {
-						plugin.slowedPlayers.add(name);
-					}
+					plugin.slowedPlayers.add(name);
 					plugin.getServer().getScheduler().runTask(plugin, new Runnable() {
 						@Override
 						public void run() {
@@ -255,7 +257,7 @@ public class PlayerListener implements Listener {
 					if (config.getString(backpack + ".Inventory") == null) {
 						continue;
 					}
-					binv = RealisticBackpacks.inter.stringToInventory(config.getString(backpack + ".Inventory"), key.get(3));
+					binv = RealisticBackpacks.NMS.stringToInventory(config.getString(backpack + ".Inventory"), key.get(3));
 				}
 				if (binv != null) {
 					for (final ItemStack item : binv.getContents()) {
