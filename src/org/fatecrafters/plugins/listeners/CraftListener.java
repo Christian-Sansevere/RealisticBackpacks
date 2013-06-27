@@ -24,7 +24,7 @@ public class CraftListener implements Listener {
 	public void onPrepareCraft(final PrepareItemCraftEvent e) {
 		final ItemStack result = e.getInventory().getResult();
 		for (final String backpack : plugin.backpacks) {
-			if (plugin.backpackOverrides.get(backpack) != null && result.equals(plugin.backpackOverrides.get(backpack))) {
+			if (plugin.backpackOverrides.get(backpack) != null && result.getType().equals(plugin.backpackOverrides.get(backpack))) {
 				e.getInventory().setResult(plugin.backpackItems.get(backpack));
 				break;
 			}
