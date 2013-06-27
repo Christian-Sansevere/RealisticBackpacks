@@ -29,7 +29,7 @@ import org.fatecrafters.plugins.util.RBUtil;
 
 public class RealisticBackpacks extends JavaPlugin {
 
-	public static RBInterface inter;
+	public static RBInterface NMS;
 
 	public static Economy econ = null;
 
@@ -48,7 +48,8 @@ public class RealisticBackpacks extends JavaPlugin {
 	public HashMap<String, List<String>> backpackLore = new HashMap<String, List<String>>();
 	public HashMap<String, List<String>> backpackRecipe = new HashMap<String, List<String>>();
 	public HashMap<String, ItemStack> backpackItems = new HashMap<String, ItemStack>();
-	public HashMap<String, ItemStack> backpackOverrides = new HashMap<String, ItemStack>();
+	public HashMap<String, Material> backpackOverrides = new HashMap<String, Material>();
+	public HashMap<String, List<String>> backpackBlacklist = new HashMap<String, List<String>>();
 
 	public HashMap<String, String> playerData = new HashMap<String, String>();
 	public List<String> slowedPlayers = new ArrayList<String>();
@@ -87,7 +88,7 @@ public class RealisticBackpacks extends JavaPlugin {
 			final Constructor<?> cons = clazz.getDeclaredConstructor(getClass());
 			final Object obj = cons.newInstance(this);
 			if (obj instanceof RBInterface) {
-				inter = (RBInterface) obj;
+				NMS = (RBInterface) obj;
 			}
 		} catch (final Exception e) {
 			getLogger().severe("* ! * ! * !* ! * ! * ! * ! * !* ! * ! * ! *");
@@ -123,6 +124,7 @@ public class RealisticBackpacks extends JavaPlugin {
 			setMessage("notPurchasable", "&cYou can not purchase this backpack.");
 			setMessage("listCommandNotBuyable", "&aNot Purchasable");
 			setMessage("listCommandNoPermission", "&aInsufficient permissions to purchase");
+			setMessage("cantPutItemInBackpack", "&cThis item can not go in this backpack!");
 			setConfig("Data.FileSystem", "flatfile");
 			setConfig("Data.MySQL.database", "minecraft");
 			setConfig("Data.MySQL.username", "user");
@@ -149,6 +151,8 @@ public class RealisticBackpacks extends JavaPlugin {
 
 	@Override
 	public void onDisable() {
+		econ = null;
+		NMS = null;
 		HandlerList.unregisterAll(this);
 		getServer().getPluginManager().disablePlugin(this);
 		getLogger().info("Realistic Backpacks has been disabled.");
@@ -220,6 +224,7 @@ public class RealisticBackpacks extends JavaPlugin {
 			list.add(14, getConfig().getString("Backpacks." + backpack + ".Price"));
 			list.add(15, getConfig().getString("Backpacks." + backpack + ".OpenWith"));
 			backpackData.put(backpack, list);
+			backpackBlacklist.put(backpack, getConfig().getStringList("Backpacks." + backpack + ".ItemBlacklist"));
 		}
 		final File f = new File(getDataFolder() + File.separator + "messages.yml");
 		final FileConfiguration config = YamlConfiguration.loadConfiguration(f);
@@ -232,16 +237,19 @@ public class RealisticBackpacks extends JavaPlugin {
 		user = getConfig().getString("Data.MySQL.username");
 		password = getConfig().getString("Data.MySQL.password");
 		url = "jdbc:mysql://" + getConfig().getString("Data.MySQL.ip") + ":" + getConfig().getInt("Data.MySQL.port") + "/" + getConfig().getString("Data.MySQL.database");
+
 		if (!getConfig().isSet("Config.MultipleBackpacksInInventory.average")) {
 			average = false;
 		} else {
 			average = getConfig().getBoolean("Config.MultipleBackpacksInInventory.average");
 		}
+
 		if (!getConfig().isSet("Config.MultipleBackpacksInInventory.add")) {
 			add = false;
 		} else {
 			add = getConfig().getBoolean("Config.MultipleBackpacksInInventory.add");
 		}
+
 		if (!getConfig().isSet("Data.FileSystem")) {
 			usingMysql = false;
 		} else if (getConfig().getString("Data.FileSystem").equalsIgnoreCase("mysql") || getConfig().getString("Data.FileSystem").equalsIgnoreCase("sql")) {
@@ -252,49 +260,29 @@ public class RealisticBackpacks extends JavaPlugin {
 		} else {
 			usingMysql = false;
 		}
+
 		if (!getConfig().isSet("Config.usePermissions")) {
 			usingPermissions = true;
 		} else {
 			usingPermissions = getConfig().getBoolean("Config.usePermissions");
 		}
+
 		for (final String backpack : backpacks) {
 
-			final List<String> key = backpackData.get(backpack);
-			final String backpackitem = key.get(2);
-			final String[] backpackitemSplit = backpackitem.split(":");
-			Material baseItem = Material.getMaterial(Integer.parseInt(backpackitemSplit[0]));
-			ItemStack backpackItemData;
-			if (backpackitemSplit.length > 1) {
-				backpackItemData = new ItemStack(baseItem, 1, (byte) Integer.parseInt(backpackitemSplit[1]));
-				backpackItems.put(backpack, getConfigLore(backpackItemData, backpack));
-			} else {
-				backpackItems.put(backpack, getConfigLore(new ItemStack(Material.getMaterial(Integer.parseInt(backpackitemSplit[0]))), backpack));
-			}
-
 			final String override = getConfig().getString("Backpacks." + backpack + ".Override");
-			if (override != null && Integer.parseInt(override) != 0) {
-				final String[] overrideSplit = override.split(":");
-				final Material overrideItem = Material.getMaterial(Integer.parseInt(overrideSplit[0]));
-				ItemStack overrideItemData;
-				if (overrideSplit.length > 1) {
-					overrideItemData = new ItemStack(overrideItem, 1, (byte) Integer.parseInt(overrideSplit[1]));
-					backpackOverrides.put(backpack, overrideItemData);
-				} else {
-					backpackOverrides.put(backpack, new ItemStack(overrideItem));
-				}
+			if (override != null) {
+				backpackOverrides.put(backpack, RBUtil.getItemstackFromString(override).getType());
 			} else {
 				backpackOverrides.put(backpack, null);
 			}
 
+			final List<String> key = backpackData.get(backpack);
+			final String backpackItem = key.get(2);
+			backpackItems.put(backpack, getConfigLore(RBUtil.getItemstackFromString(backpackItem), backpack));
+
 			ShapedRecipe recipe = null;
 			if (key.get(1).equalsIgnoreCase("true")) {
-				if (backpackitemSplit.length > 1) {
-					baseItem = Material.getMaterial(Integer.parseInt(backpackitemSplit[0]));
-					backpackItemData = new ItemStack(baseItem, 1, (byte) Integer.parseInt(backpackitemSplit[1]));
-					recipe = new ShapedRecipe(getConfigLore(backpackItemData, backpack));
-				} else {
-					recipe = new ShapedRecipe(getConfigLore(new ItemStack(Material.getMaterial(Integer.parseInt(backpackitemSplit[0]))), backpack));
-				}
+				recipe = new ShapedRecipe(backpackItems.get(backpack));
 				recipe.shape("abc", "def", "ghi");
 				int i = 0;
 				for (final String s : backpackRecipe.get(backpack)) {
@@ -350,7 +338,7 @@ public class RealisticBackpacks extends JavaPlugin {
 		}
 	}
 
-	public ItemStack getConfigLore(final ItemStack item, final String backpack) {
+	private ItemStack getConfigLore(final ItemStack item, final String backpack) {
 		final List<String> key = backpackData.get(backpack);
 		final ItemMeta meta = item.getItemMeta();
 		final ArrayList<String> lore = new ArrayList<String>();

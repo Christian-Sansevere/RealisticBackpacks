@@ -6,8 +6,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.inventory.ItemStack;
 import org.fatecrafters.plugins.RealisticBackpacks;
 
 public class RBUtil {
@@ -40,6 +42,17 @@ public class RBUtil {
 			i = foodlevel - Collections.max(list);
 		}
 		return i;
+	}
+
+	public static ItemStack getItemstackFromString(final String s) {
+		ItemStack item = null;
+		final String[] split = s.split(":");
+		if (split.length == 1) {
+			item = new ItemStack(Material.getMaterial(Integer.parseInt(split[0])));
+		} else {
+			item = new ItemStack(Material.getMaterial(Integer.parseInt(split[0])), 1, (byte) Integer.parseInt(split[1]));
+		}
+		return item;
 	}
 
 	public static void destroyContents(final String name, final String backpack) {
