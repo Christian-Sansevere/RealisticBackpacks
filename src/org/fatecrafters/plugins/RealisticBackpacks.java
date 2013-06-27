@@ -48,7 +48,7 @@ public class RealisticBackpacks extends JavaPlugin {
 	public HashMap<String, List<String>> backpackLore = new HashMap<String, List<String>>();
 	public HashMap<String, List<String>> backpackRecipe = new HashMap<String, List<String>>();
 	public HashMap<String, ItemStack> backpackItems = new HashMap<String, ItemStack>();
-	public HashMap<String, Material> backpackOverrides = new HashMap<String, Material>();
+	public HashMap<String, ItemStack> backpackOverrides = new HashMap<String, ItemStack>();
 	public HashMap<String, List<String>> backpackBlacklist = new HashMap<String, List<String>>();
 
 	public HashMap<String, String> playerData = new HashMap<String, String>();
@@ -271,7 +271,7 @@ public class RealisticBackpacks extends JavaPlugin {
 
 			final String override = getConfig().getString("Backpacks." + backpack + ".Override");
 			if (override != null) {
-				backpackOverrides.put(backpack, RBUtil.getItemstackFromString(override).getType());
+				backpackOverrides.put(backpack, RBUtil.getItemstackFromString(override));
 			} else {
 				backpackOverrides.put(backpack, null);
 			}
