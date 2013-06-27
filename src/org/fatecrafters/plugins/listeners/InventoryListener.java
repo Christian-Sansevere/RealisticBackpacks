@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
 
+import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -16,6 +17,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.fatecrafters.plugins.RealisticBackpacks;
 import org.fatecrafters.plugins.util.MysqlFunctions;
+import org.fatecrafters.plugins.util.RBUtil;
 
 public class InventoryListener implements Listener {
 
@@ -40,7 +42,7 @@ public class InventoryListener implements Listener {
 							e.printStackTrace();
 						}
 					} else {
-						final String invString = RealisticBackpacks.inter.inventoryToString(inv);
+						final String invString = RealisticBackpacks.NMS.inventoryToString(inv);
 						final File file = new File(plugin.getDataFolder() + File.separator + "userdata" + File.separator + name + ".yml");
 						final FileConfiguration config = YamlConfiguration.loadConfiguration(file);
 						config.set(plugin.playerData.get(name) + ".Inventory", invString);
@@ -59,35 +61,54 @@ public class InventoryListener implements Listener {
 	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
 	public void onInventoryClick(final InventoryClickEvent e) {
 		if (e.getWhoClicked() instanceof Player) {
-			final Player p = (Player) e.getWhoClicked();
 			final ItemStack curItem = e.getCurrentItem();
-			final Inventory inv = p.getInventory();
 			final Inventory otherInv = e.getView().getTopInventory();
 			if (curItem != null && otherInv != null) {
-				plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
-					@Override
-					public void run() {
-						if (plugin.slowedPlayers.contains(p.getName())) {
-							for (final String backpack : plugin.backpacks) {
-								final ItemStack backpackItem = plugin.backpackItems.get(backpack);
-								if (!curItem.equals(backpackItem)) {
+				final Player p = (Player) e.getWhoClicked();
+				final String name = p.getName();
+				if (plugin.slowedPlayers.contains(name)) {
+					boolean go = false;
+					String type = null;
+					for (final String backpack : plugin.backpacks) {
+						if (curItem.isSimilar(plugin.backpackItems.get(backpack))) {
+							go = true;
+							type = "bp";
+						} else if (plugin.playerData.containsKey(name)) {
+							for (final String blacklist : plugin.backpackBlacklist.get(plugin.playerData.get(name))) {
+								if (blacklist == null) {
 									continue;
 								}
-								if (!inv.contains(backpackItem)) {
-									plugin.slowedPlayers.remove(p.getName());
-									plugin.getServer().getScheduler().runTask(plugin, new Runnable() {
-										@Override
-										public void run() {
-											p.setWalkSpeed(0.2F);
-										}
-									});
+								if (plugin.backpackItems.containsKey(blacklist)) {
+									if (curItem.isSimilar(plugin.backpackItems.get(blacklist))) {
+										go = true;
+										type = "bl";
+										break;
+									}
+								} else {
+									if (curItem.isSimilar(RBUtil.getItemstackFromString(blacklist))) {
+										go = true;
+										type = "bl";
+										break;
+									}
 								}
 							}
 						}
+						if (go) {
+							if (type.equals("bp")) {
+								plugin.slowedPlayers.remove(name);
+								p.setWalkSpeed(0.2F);
+								return;
+							} else {
+								e.setCancelled(true);
+								p.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("cantPutItemInBackpack")));
+								return;
+							}
+						} else {
+							continue;
+						}
 					}
-				});
+				}
 			}
 		}
 	}
-
 }
