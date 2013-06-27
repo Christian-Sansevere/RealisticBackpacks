@@ -29,6 +29,9 @@ Backpacks:
       lore:
         - '&cA container for carrying items.'
         - '&cTheres a lot of space inside.'
+    ItemBlacklist:
+      - 'exampleBackpack'
+      - '54'
     onDeath:
       dropContents: true
       destroyContents: true
