@@ -41,7 +41,7 @@ public class PlayerListener implements Listener {
 
 	@SuppressWarnings("deprecation")
 	@EventHandler(priority = EventPriority.NORMAL)
-	public void onRightClick(final PlayerInteractEvent e) {
+	public void onInteract(final PlayerInteractEvent e) {
 		final Action act = e.getAction();
 		final Player p = e.getPlayer();
 		final ItemStack item = p.getItemInHand();
