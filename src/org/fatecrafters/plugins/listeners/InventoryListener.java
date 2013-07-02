@@ -63,52 +63,44 @@ public class InventoryListener implements Listener {
 		if (e.getWhoClicked() instanceof Player) {
 			final ItemStack curItem = e.getCurrentItem();
 			final Inventory otherInv = e.getView().getTopInventory();
+
 			if (curItem != null && otherInv != null) {
+
 				final Player p = (Player) e.getWhoClicked();
 				final String name = p.getName();
-				if (plugin.slowedPlayers.contains(name)) {
-					boolean go = false;
-					String type = null;
-					for (final String backpack : plugin.backpacks) {
-						if (curItem.isSimilar(plugin.backpackItems.get(backpack))) {
-							go = true;
-							type = "bp";
-						} else if (plugin.playerData.containsKey(name)) {
-							for (final String blacklist : plugin.backpackBlacklist.get(plugin.playerData.get(name))) {
-								if (blacklist == null) {
-									continue;
-								}
-								if (plugin.backpackItems.containsKey(blacklist)) {
-									if (curItem.isSimilar(plugin.backpackItems.get(blacklist))) {
-										go = true;
-										type = "bl";
-										break;
-									}
-								} else {
-									if (curItem.isSimilar(RBUtil.getItemstackFromString(blacklist))) {
-										go = true;
-										type = "bl";
-										break;
-									}
-								}
-							}
+				final boolean isInBackpack = plugin.playerData.containsKey(name);
+
+				if (isInBackpack) {
+					for (final String blacklist : plugin.backpackBlacklist.get(plugin.playerData.get(name))) {
+						if (blacklist == null) {
+							continue;
 						}
-						if (go) {
-							if (type.equals("bp")) {
-								plugin.slowedPlayers.remove(name);
-								p.setWalkSpeed(0.2F);
-								return;
-							} else {
+						if (plugin.backpackItems.containsKey(blacklist)) {
+							if (curItem.isSimilar(plugin.backpackItems.get(blacklist))) {
 								e.setCancelled(true);
 								p.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("cantPutItemInBackpack")));
 								return;
 							}
 						} else {
-							continue;
+							if (curItem.isSimilar(RBUtil.getItemstackFromString(blacklist))) {
+								e.setCancelled(true);
+								p.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("cantPutItemInBackpack")));
+								return;
+							}
 						}
 					}
 				}
+
+				for (final String backpack : plugin.backpacks) {
+					if (curItem.isSimilar(plugin.backpackItems.get(backpack))) {
+						plugin.slowedPlayers.remove(name);
+						p.setWalkSpeed(0.2F);
+						break;
+					}
+				}
+
 			}
 		}
 	}
+
 }
