@@ -8,6 +8,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import org.bukkit.ChatColor;
 import org.bukkit.inventory.Inventory;
 import org.fatecrafters.plugins.RealisticBackpacks;
 
@@ -90,7 +91,7 @@ public class MysqlFunctions {
 			if (res.next()) {
 				final String invString = res.getString(1);
 				if (invString != null) {
-					returnInv = RealisticBackpacks.NMS.stringToInventory(invString, plugin.backpackData.get(backpack).get(3));
+					returnInv = RealisticBackpacks.NMS.stringToInventory(invString, ChatColor.translateAlternateColorCodes('&', plugin.backpackData.get(backpack).get(3)));
 				} else {
 					returnInv = null;
 				}
