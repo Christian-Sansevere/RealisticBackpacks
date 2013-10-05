@@ -29,6 +29,9 @@ Backpacks:
       lore:
         - '&cA container for carrying items.'
         - '&cTheres a lot of space inside.'
+    UseWhitelist: false
+    ItemWhitelist:
+      - ''
     ItemBlacklist:
       - 'exampleBackpack'
       - '54'
