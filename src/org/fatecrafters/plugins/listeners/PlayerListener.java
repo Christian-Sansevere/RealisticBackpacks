@@ -186,7 +186,7 @@ public class PlayerListener implements Listener {
 				final List<String> backpackList = new ArrayList<String>();
 				for (final String backpack : plugin.backpacks) {
 					final List<String> key = plugin.backpackData.get(backpack);
-					if (key.get(8).equals("true") && inv.contains(plugin.backpackItems.get(backpack))) {
+					if (key.get(8) != null && key.get(8).equalsIgnoreCase("true") && inv != null && inv.contains(plugin.backpackItems.get(backpack))) {
 						backpackList.add(backpack);
 					}
 				}
@@ -239,7 +239,7 @@ public class PlayerListener implements Listener {
 			}
 			p.setWalkSpeed(0.2F);
 			final List<String> key = plugin.backpackData.get(backpack);
-			if (key.get(5) != null && key.get(5).equals("true")) {
+			if (key.get(5) != null && key.get(5).equalsIgnoreCase("true")) {
 				//Drop contents
 				Inventory binv = null;
 				if (plugin.isUsingMysql()) {
@@ -259,6 +259,11 @@ public class PlayerListener implements Listener {
 					}
 					binv = RealisticBackpacks.NMS.stringToInventory(config.getString(backpack + ".Inventory"), key.get(3));
 				}
+				if (plugin.playerData.containsKey(name)) {
+					if (p.getItemOnCursor() != null) {
+						p.setItemOnCursor(null);
+					}
+				}
 				if (binv != null) {
 					for (final ItemStack item : binv.getContents()) {
 						if (item != null) {
@@ -268,16 +273,16 @@ public class PlayerListener implements Listener {
 				}
 				RBUtil.destroyContents(name, backpack);
 			}
-			if (key.get(4) != null && key.get(4).equals("true")) {
+			if (key.get(4) != null && key.get(4).equalsIgnoreCase("true")) {
 				//Destroy contents
 				RBUtil.destroyContents(name, backpack);
 				p.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("contentsDestroyed")));
 			}
-			if (key.get(6) != null && key.get(6).equals("false")) {
+			if (key.get(6) != null && key.get(6).equalsIgnoreCase("false")) {
 				//Drop backpack
 				e.getDrops().remove(plugin.backpackItems.get(backpack));
 			}
-			if (key.get(7) != null && key.get(7).equals("true")) {
+			if (key.get(7) != null && key.get(7).equalsIgnoreCase("true")) {
 				deadPlayers.put(name, backpack);
 			}
 		}
@@ -290,7 +295,7 @@ public class PlayerListener implements Listener {
 		final String name = p.getName();
 		for (final String backpack : plugin.backpacks) {
 			final List<String> key = plugin.backpackData.get(backpack);
-			if (key.get(7) != null && key.get(7).equals("true") && deadPlayers.get(name) != null && deadPlayers.get(name).equals(backpack)) {
+			if (key.get(7) != null && key.get(7).equalsIgnoreCase("true") && deadPlayers.get(name) != null && deadPlayers.get(name).equals(backpack)) {
 				//Keep backpack
 				p.getInventory().addItem(plugin.backpackItems.get(backpack));
 				p.updateInventory();

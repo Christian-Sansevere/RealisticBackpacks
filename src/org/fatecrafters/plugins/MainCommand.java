@@ -217,6 +217,82 @@ public class MainCommand implements CommandExecutor {
 							}
 						}
 					});
+				} else if (command.equalsIgnoreCase("view")) {
+					if (!(args.length == 3)) {
+						sender.sendMessage(ChatColor.RED + "Incorrect syntax. Please use:" + ChatColor.GRAY + " /rb view <player> <backpack>");
+						return false;
+					}
+					String backpack = args[2];
+					for (final String b : plugin.backpacks) {
+						if (b.equalsIgnoreCase(backpack)) {
+							backpack = b;
+						}
+					}
+					boolean fullview = false;
+					boolean restrictedview = false;
+					if (plugin.isUsingPerms() && sender.hasPermission("rb.fullview")) {
+						fullview = true;
+					} else if (plugin.isUsingPerms() && sender.hasPermission("rb.restrictedview")) {
+						restrictedview = true;
+					}
+					if (plugin.isUsingPerms() && !fullview && !restrictedview) {
+						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("noPermission")));
+						return false;
+					}
+					if (!plugin.backpacks.contains(backpack)) {
+						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("backpackDoesNotExist")));
+						return false;
+					}
+					Inventory inv = null;
+					String name = args[1];
+					final Player p = (Player) sender;
+					final List<String> key = plugin.backpackData.get(backpack);
+					if (!plugin.isUsingMysql()) {
+						boolean fileExists = false;
+						String fullName = null;
+						File file = null;
+						final File dir = new File(plugin.getDataFolder() + File.separator + "userdata");
+						for (final File f : dir.listFiles()) {
+							final String fileName = f.getName();
+							fullName = fileName.replace(".yml", "");
+							if (fullName.equalsIgnoreCase(name)) {
+								name = fullName;
+								file = f;
+								fileExists = true;
+								break;
+							}
+						}
+						if (!fileExists) {
+							sender.sendMessage(ChatColor.RED + "This player has never opened this backpack with flatfile data.");
+							return false;
+						}
+						final FileConfiguration config = YamlConfiguration.loadConfiguration(file);
+						if (config.getString(backpack + ".Inventory") == null) {
+							inv = plugin.getServer().createInventory(p, Integer.parseInt(key.get(0)), ChatColor.translateAlternateColorCodes('&', fullName + "'s " + backpack + " data"));
+						} else {
+							inv = RealisticBackpacks.NMS.stringToInventory(config.getString(backpack + ".Inventory"), fullName + "'s " + backpack + " data");
+						}
+					} else {
+						try {
+							inv = MysqlFunctions.getBackpackInv(name, backpack);
+						} catch (final SQLException e1) {
+							e1.printStackTrace();
+						}
+						if (inv == null) {
+							sender.sendMessage(ChatColor.RED + "This player has never opened this backpack with MySQL data.");
+							return false;
+						}
+					}
+					if (plugin.playerData.containsKey(name)) {
+						sender.sendMessage(ChatColor.RED + "This player is in his backpack, wait for him to close it.");
+						return false;
+					}
+					if (fullview || !plugin.isUsingPerms()) {
+						plugin.adminFullView.put(sender.getName(), backpack + ":" + name);
+					} else {
+						plugin.adminRestrictedView.add(sender.getName());
+					}
+					p.openInventory(inv);
 				} else {
 					sender.sendMessage(ChatColor.RED + "Command not found.");
 				}

@@ -50,8 +50,11 @@ public class RealisticBackpacks extends JavaPlugin {
 	public HashMap<String, ItemStack> backpackItems = new HashMap<String, ItemStack>();
 	public HashMap<String, ItemStack> backpackOverrides = new HashMap<String, ItemStack>();
 	public HashMap<String, List<String>> backpackBlacklist = new HashMap<String, List<String>>();
+	public HashMap<String, List<String>> backpackWhitelist = new HashMap<String, List<String>>();
 
 	public HashMap<String, String> playerData = new HashMap<String, String>();
+	public HashMap<String, String> adminFullView = new HashMap<String, String>();
+	public List<String> adminRestrictedView = new ArrayList<String>();
 	public List<String> slowedPlayers = new ArrayList<String>();
 
 	/*List key ---------
@@ -71,6 +74,7 @@ public class RealisticBackpacks extends JavaPlugin {
 	 * 13 = Purchasable
 	 * 14 = Price
 	 * 15 = OpenWith
+	 * 16 = UseWhitelist
 	 */
 
 	@Override
@@ -223,8 +227,10 @@ public class RealisticBackpacks extends JavaPlugin {
 			list.add(13, getConfig().getString("Backpacks." + backpack + ".Purchasable"));
 			list.add(14, getConfig().getString("Backpacks." + backpack + ".Price"));
 			list.add(15, getConfig().getString("Backpacks." + backpack + ".OpenWith"));
+			list.add(16, getConfig().getString("Backpacks." + backpack + ".UseWhitelist"));
 			backpackData.put(backpack, list);
 			backpackBlacklist.put(backpack, getConfig().getStringList("Backpacks." + backpack + ".ItemBlacklist"));
+			backpackWhitelist.put(backpack, getConfig().getStringList("Backpacks." + backpack + ".ItemWhitelist"));
 		}
 		final File f = new File(getDataFolder() + File.separator + "messages.yml");
 		final FileConfiguration config = YamlConfiguration.loadConfiguration(f);
