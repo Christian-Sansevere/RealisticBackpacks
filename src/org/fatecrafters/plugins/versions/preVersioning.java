@@ -13,6 +13,7 @@ import net.minecraft.server.NBTTagList;
 import org.bukkit.craftbukkit.inventory.CraftInventoryCustom;
 import org.bukkit.craftbukkit.inventory.CraftItemStack;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 import org.fatecrafters.plugins.RBInterface;
 import org.fatecrafters.plugins.RealisticBackpacks;
 
@@ -62,6 +63,11 @@ public class preVersioning implements RBInterface {
 			}
 		}
 		return inventory;
+	}
+
+	@Override
+	public ItemStack addGlow(ItemStack item) {
+		return item;
 	}
 
 }

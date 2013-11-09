@@ -153,6 +153,7 @@ public class InventoryListener implements Listener {
 					if (curItem.isSimilar(plugin.backpackItems.get(backpack))) {
 						plugin.slowedPlayers.remove(name);
 						p.setWalkSpeed(0.2F);
+						e.setCurrentItem(RealisticBackpacks.NMS.addGlow(plugin.backpackItems.get(backpack)));
 						break;
 					}
 				}

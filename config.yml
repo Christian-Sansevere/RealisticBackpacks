@@ -14,6 +14,7 @@ Config:
 Backpacks:
   exampleBackpack:
     Size: 18
+    addGlow: true
     OpenWith: right_click
     Purchasable: true
     Price: 2000

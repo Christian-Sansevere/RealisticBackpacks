@@ -92,7 +92,11 @@ public class MainCommand implements CommandExecutor {
 					final Inventory inv = p.getInventory();
 					if (inv.firstEmpty() != -1) {
 						RealisticBackpacks.econ.withdrawPlayer(p.getName(), price);
-						inv.addItem(plugin.backpackItems.get(backpack));
+						if (plugin.backpackData.get(backpack).get(17).equalsIgnoreCase("true")) {
+							inv.addItem(RealisticBackpacks.NMS.addGlow(plugin.backpackItems.get(backpack)));
+						} else {
+							inv.addItem(plugin.backpackItems.get(backpack));
+						}
 						p.updateInventory();
 						sender.sendMessage(ChatColor.GREEN + "You have purchased the " + ChatColor.GOLD + backpack + ChatColor.GREEN + " backpack for " + ChatColor.GOLD + price);
 						return true;
@@ -155,7 +159,11 @@ public class MainCommand implements CommandExecutor {
 					}
 					final Inventory inv = other.getInventory();
 					if (inv.firstEmpty() != -1) {
-						inv.addItem(plugin.backpackItems.get(backpack));
+						if (plugin.backpackData.get(backpack).get(17).equalsIgnoreCase("true")) {
+							inv.addItem(RealisticBackpacks.NMS.addGlow(plugin.backpackItems.get(backpack)));
+						} else {
+							inv.addItem(plugin.backpackItems.get(backpack));
+						}
 						other.updateInventory();
 						sender.sendMessage(ChatColor.GREEN + "You have given the " + ChatColor.GOLD + backpack + ChatColor.GREEN + " backpack to " + ChatColor.GOLD + other.getName());
 						return true;

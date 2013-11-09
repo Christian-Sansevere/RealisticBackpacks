@@ -13,6 +13,7 @@ import net.minecraft.server.v1_5_R1.NBTTagList;
 import org.bukkit.craftbukkit.v1_5_R1.inventory.CraftInventoryCustom;
 import org.bukkit.craftbukkit.v1_5_R1.inventory.CraftItemStack;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 import org.fatecrafters.plugins.RBInterface;
 import org.fatecrafters.plugins.RealisticBackpacks;
 
@@ -59,6 +60,27 @@ public class v1_5_R1 implements RBInterface {
 			}
 		}
 		return inventory;
+	}
+
+	@Override
+	public ItemStack addGlow(ItemStack item) {
+		net.minecraft.server.v1_5_R1.ItemStack handle = CraftItemStack.asNMSCopy(item);
+
+		if (handle == null) {
+			return item;
+		}
+
+		if (handle.tag == null) {
+			handle.tag = new NBTTagCompound();
+		}
+
+		NBTTagList tag = handle.getEnchantments();
+		if (tag == null) {
+			tag = new NBTTagList("ench");
+			handle.tag.set("ench", tag);
+		}
+
+		return CraftItemStack.asCraftMirror(handle);
 	}
 
 }
