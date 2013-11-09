@@ -114,13 +114,13 @@ public class InventoryListener implements Listener {
 								continue;
 							}
 							if (plugin.backpackItems.containsKey(whitelist)) {
-								if (curItem.getType() != plugin.backpackItems.get(whitelist).getType()) {
+								if (!curItem.isSimilar(plugin.backpackItems.get(whitelist))) {
 									e.setCancelled(true);
 									p.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("cantPutItemInBackpack")));
 									return;
 								}
 							} else {
-								if (curItem.getType() != RBUtil.getItemstackFromString(whitelist).getType()) {
+								if (!RBUtil.itemsAreEqual(curItem, whitelist)) {
 									e.setCancelled(true);
 									p.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("cantPutItemInBackpack")));
 									return;
@@ -134,13 +134,13 @@ public class InventoryListener implements Listener {
 							continue;
 						}
 						if (plugin.backpackItems.containsKey(blacklist)) {
-							if (curItem.getType() == plugin.backpackItems.get(blacklist).getType()) {
+							if (curItem.isSimilar(plugin.backpackItems.get(blacklist))) {
 								e.setCancelled(true);
 								p.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("cantPutItemInBackpack")));
 								return;
 							}
 						} else {
-							if (curItem.getType() == RBUtil.getItemstackFromString(blacklist).getType()) {
+							if (RBUtil.itemsAreEqual(curItem, blacklist)) {
 								e.setCancelled(true);
 								p.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("cantPutItemInBackpack")));
 								return;

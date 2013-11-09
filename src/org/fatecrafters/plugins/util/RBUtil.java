@@ -20,6 +20,26 @@ public class RBUtil {
 		RBUtil.plugin = plugin;
 	}
 
+	public static void destroyContents(final String name, final String backpack) {
+		plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
+			@Override
+			public void run() {
+				if (plugin.isUsingMysql()) {
+					MysqlFunctions.delete(name, backpack);
+				} else {
+					final File file = new File(plugin.getDataFolder() + File.separator + "userdata" + File.separator + name + ".yml");
+					final FileConfiguration config = YamlConfiguration.loadConfiguration(file);
+					config.set(backpack + ".Inventory", null);
+					try {
+						config.save(file);
+					} catch (final IOException e1) {
+						e1.printStackTrace();
+					}
+				}
+			}
+		});
+	}
+
 	public static int getFoodLevel(final int foodlevel, final int pLevel, final int listsize, final int key, final List<String> backpackList) {
 		int i = 0;
 		if (plugin.isAveraging()) {
@@ -50,28 +70,80 @@ public class RBUtil {
 		if (split.length == 1) {
 			item = new ItemStack(Material.getMaterial(Integer.parseInt(split[0])));
 		} else {
-			item = new ItemStack(Material.getMaterial(Integer.parseInt(split[0])), 1, (byte) Integer.parseInt(split[1]));
+			if (split[1].equalsIgnoreCase("enchant")) {
+				item = new ItemStack(Material.getMaterial(Integer.parseInt(split[0])));
+			} else if (split[1].equalsIgnoreCase("lore")) {
+				item = new ItemStack(Material.getMaterial(Integer.parseInt(split[0])));
+			} else {
+				item = new ItemStack(Material.getMaterial(Integer.parseInt(split[0])), 1, (byte) Integer.parseInt(split[1]));
+			}
 		}
 		return item;
 	}
 
-	public static void destroyContents(final String name, final String backpack) {
-		plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
-			@Override
-			public void run() {
-				if (plugin.isUsingMysql()) {
-					MysqlFunctions.delete(name, backpack);
-				} else {
-					final File file = new File(plugin.getDataFolder() + File.separator + "userdata" + File.separator + name + ".yml");
-					final FileConfiguration config = YamlConfiguration.loadConfiguration(file);
-					config.set(backpack + ".Inventory", null);
-					try {
-						config.save(file);
-					} catch (final IOException e1) {
-						e1.printStackTrace();
-					}
+	public static boolean isEnchanted(final String s) {
+		final String[] split = s.split(":");
+		int i = 0;
+		if (split.length != 1) {
+			for (i = 1; i < split.length; i++) {
+				if (split[i].equalsIgnoreCase("enchant") || split[i].equalsIgnoreCase("all")) {
+					return true;
 				}
 			}
-		});
+		}
+		return false;
+	}
+
+	public static boolean isLored(final String s) {
+		final String[] split = s.split(":");
+		int i = 0;
+		if (split.length != 1) {
+			for (i = 1; i < split.length; i++) {
+				if (split[i].equalsIgnoreCase("lore") || split[i].equalsIgnoreCase("all")) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	public static boolean hasLore(ItemStack item) {
+		if (item.getItemMeta() != null) {
+			if (item.getItemMeta().hasDisplayName() || item.getItemMeta().hasLore()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public static boolean itemsAreEqual(ItemStack item, final String s) {
+		boolean lore = hasLore(item);
+		boolean enchant = item.getEnchantments().size() >= 1;
+		boolean isLored = isLored(s);
+		boolean isEnchanted = isEnchanted(s);
+		if (item.isSimilar(getItemstackFromString(s)) && !isLored && !isEnchanted) {
+			return true;
+		} else if (item.getType() == getItemstackFromString(s).getType()) {
+			if (enchant && !lore) {
+				if (isEnchanted && !isLored) {
+					return true;
+				} else {
+					return false;
+				}
+			} else if (enchant && lore) {
+				if (isEnchanted && isLored) {
+					return true;
+				} else {
+					return false;
+				}
+			} else if (!enchant && lore) {
+				if (isLored && !isEnchanted) {
+					return true;
+				} else {
+					return false;
+				}
+			}
+		}
+		return false;
 	}
 }

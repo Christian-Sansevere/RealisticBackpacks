@@ -31,11 +31,10 @@ Backpacks:
         - '&cA container for carrying items.'
         - '&cTheres a lot of space inside.'
     UseWhitelist: false
-    ItemWhitelist:
-      - ''
+    ItemWhitelist: []
     ItemBlacklist:
       - 'exampleBackpack'
-      - '54'
+      - '276:all'
     onDeath:
       dropContents: true
       destroyContents: true
