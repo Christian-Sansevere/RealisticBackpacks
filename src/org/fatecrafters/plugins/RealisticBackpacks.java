@@ -24,6 +24,7 @@ import org.fatecrafters.plugins.listeners.CraftListener;
 import org.fatecrafters.plugins.listeners.EntityListener;
 import org.fatecrafters.plugins.listeners.InventoryListener;
 import org.fatecrafters.plugins.listeners.PlayerListener;
+import org.fatecrafters.plugins.metrics.MetricsLite;
 import org.fatecrafters.plugins.util.MysqlFunctions;
 import org.fatecrafters.plugins.util.RBUtil;
 
@@ -75,10 +76,17 @@ public class RealisticBackpacks extends JavaPlugin {
 	 * 14 = Price
 	 * 15 = OpenWith
 	 * 16 = UseWhitelist
+	 * 17 = addGlow
 	 */
 
 	@Override
 	public void onEnable() {
+		try {
+			MetricsLite metrics = new MetricsLite(this);
+			metrics.start();
+		} catch (IOException e) {
+			getLogger().severe("Metrics failed to work.");
+		}
 		final String p = getServer().getClass().getPackage().getName();
 		final String version = p.substring(p.lastIndexOf('.') + 1);
 		try {
@@ -228,6 +236,7 @@ public class RealisticBackpacks extends JavaPlugin {
 			list.add(14, getConfig().getString("Backpacks." + backpack + ".Price"));
 			list.add(15, getConfig().getString("Backpacks." + backpack + ".OpenWith"));
 			list.add(16, getConfig().getString("Backpacks." + backpack + ".UseWhitelist"));
+			list.add(17, getConfig().getString("Backpacks." + backpack + ".addGlow"));
 			backpackData.put(backpack, list);
 			backpackBlacklist.put(backpack, getConfig().getStringList("Backpacks." + backpack + ".ItemBlacklist"));
 			backpackWhitelist.put(backpack, getConfig().getStringList("Backpacks." + backpack + ".ItemWhitelist"));
