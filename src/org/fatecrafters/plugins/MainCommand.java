@@ -75,7 +75,7 @@ public class MainCommand implements CommandExecutor {
 						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("noPermission")));
 						return false;
 					}
-					if (!plugin.backpackData.get(backpack).get(13).equals("true")) {
+					if (plugin.backpackData.get(backpack).get(13) != null && !plugin.backpackData.get(backpack).get(13).equals("true")) {
 						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("notPurchasable")));
 						return false;
 					}
@@ -92,7 +92,7 @@ public class MainCommand implements CommandExecutor {
 					final Inventory inv = p.getInventory();
 					if (inv.firstEmpty() != -1) {
 						RealisticBackpacks.econ.withdrawPlayer(p.getName(), price);
-						if (plugin.backpackData.get(backpack).get(17).equalsIgnoreCase("true")) {
+						if (plugin.backpackData.get(backpack).get(17) != null && plugin.backpackData.get(backpack).get(17).equalsIgnoreCase("true")) {
 							inv.addItem(RealisticBackpacks.NMS.addGlow(plugin.backpackItems.get(backpack)));
 						} else {
 							inv.addItem(plugin.backpackItems.get(backpack));
@@ -117,7 +117,7 @@ public class MainCommand implements CommandExecutor {
 							final List<String> key = plugin.backpackData.get(backpack);
 							if (plugin.backpackData.get(backpack).get(13).equalsIgnoreCase("true") && hasPerm) {
 								sender.sendMessage(ChatColor.LIGHT_PURPLE + backpack + ChatColor.GOLD + " | " + ChatColor.AQUA + key.get(0) + ChatColor.GOLD + " | " + ChatColor.GREEN + Double.parseDouble(key.get(14)));
-							} else if (!plugin.backpackData.get(backpack).get(13).equalsIgnoreCase("true") && hasPerm) {
+							} else if (plugin.backpackData.get(backpack).get(13) != null && !plugin.backpackData.get(backpack).get(13).equalsIgnoreCase("true") && hasPerm) {
 								sender.sendMessage(ChatColor.LIGHT_PURPLE + backpack + ChatColor.GOLD + " | " + ChatColor.AQUA + key.get(0) + ChatColor.GOLD + " | " + ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("listCommandNotBuyable")));
 							} else {
 								sender.sendMessage(ChatColor.LIGHT_PURPLE + backpack + ChatColor.GOLD + " | " + ChatColor.AQUA + key.get(0) + ChatColor.GOLD + " | " + ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("listCommandNoPermission")));
@@ -126,7 +126,7 @@ public class MainCommand implements CommandExecutor {
 					} else {
 						for (final String backpack : plugin.backpacks) {
 							final List<String> key = plugin.backpackData.get(backpack);
-							if (plugin.backpackData.get(backpack).get(13).equalsIgnoreCase("true")) {
+							if (plugin.backpackData.get(backpack).get(13) != null && plugin.backpackData.get(backpack).get(13).equalsIgnoreCase("true")) {
 								sender.sendMessage(ChatColor.LIGHT_PURPLE + backpack + ChatColor.GOLD + " | " + ChatColor.AQUA + key.get(0) + ChatColor.GOLD + " | " + ChatColor.GREEN + Double.parseDouble(key.get(14)));
 							} else {
 								sender.sendMessage(ChatColor.LIGHT_PURPLE + backpack + ChatColor.GOLD + " | " + ChatColor.AQUA + key.get(0) + ChatColor.GOLD + " | " + ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("listCommandNotBuyable")));
@@ -159,7 +159,7 @@ public class MainCommand implements CommandExecutor {
 					}
 					final Inventory inv = other.getInventory();
 					if (inv.firstEmpty() != -1) {
-						if (plugin.backpackData.get(backpack).get(17).equalsIgnoreCase("true")) {
+						if (plugin.backpackData.get(backpack).get(17) != null && plugin.backpackData.get(backpack).get(17).equalsIgnoreCase("true")) {
 							inv.addItem(RealisticBackpacks.NMS.addGlow(plugin.backpackItems.get(backpack)));
 						} else {
 							inv.addItem(plugin.backpackItems.get(backpack));
