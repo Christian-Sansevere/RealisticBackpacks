@@ -40,7 +40,7 @@ public class PlayerListener implements Listener {
 	}
 
 	@SuppressWarnings("deprecation")
-	@EventHandler(priority = EventPriority.NORMAL)
+	@EventHandler(priority = EventPriority.HIGH)
 	public void onInteract(final PlayerInteractEvent e) {
 		final Action act = e.getAction();
 		final Player p = e.getPlayer();
@@ -110,6 +110,9 @@ public class PlayerListener implements Listener {
 						}
 					}
 					plugin.playerData.put(name, backpack);
+					if (p.getOpenInventory().getTopInventory() != null) {
+						p.closeInventory();
+					}
 					p.openInventory(inv);
 					break;
 				}
