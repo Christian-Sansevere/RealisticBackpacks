@@ -70,9 +70,7 @@ public class RBUtil {
 		if (split.length == 1) {
 			item = new ItemStack(Material.getMaterial(Integer.parseInt(split[0])));
 		} else {
-			if (split[1].equalsIgnoreCase("enchant")) {
-				item = new ItemStack(Material.getMaterial(Integer.parseInt(split[0])));
-			} else if (split[1].equalsIgnoreCase("lore")) {
+			if (split[1].equalsIgnoreCase("enchant") || split[1].equalsIgnoreCase("lore") || split[1].equalsIgnoreCase("all")) {
 				item = new ItemStack(Material.getMaterial(Integer.parseInt(split[0])));
 			} else {
 				item = new ItemStack(Material.getMaterial(Integer.parseInt(split[0])), 1, (byte) Integer.parseInt(split[1]));
