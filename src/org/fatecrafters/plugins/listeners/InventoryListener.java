@@ -20,6 +20,7 @@ import org.bukkit.inventory.ItemStack;
 import org.fatecrafters.plugins.RealisticBackpacks;
 import org.fatecrafters.plugins.util.MysqlFunctions;
 import org.fatecrafters.plugins.util.RBUtil;
+import org.fatecrafters.plugins.util.Serialization;
 
 public class InventoryListener implements Listener {
 
@@ -44,7 +45,7 @@ public class InventoryListener implements Listener {
 							e.printStackTrace();
 						}
 					} else {
-						final String invString = RealisticBackpacks.NMS.inventoryToString(inv);
+						final List<String> invString = Serialization.toString(inv);
 						final File file = new File(plugin.getDataFolder() + File.separator + "userdata" + File.separator + name + ".yml");
 						final FileConfiguration config = YamlConfiguration.loadConfiguration(file);
 						config.set(plugin.playerData.get(name) + ".Inventory", invString);
@@ -69,7 +70,7 @@ public class InventoryListener implements Listener {
 							e.printStackTrace();
 						}
 					} else {
-						final String invString = RealisticBackpacks.NMS.inventoryToString(inv);
+						final List<String> invString = Serialization.toString(inv);
 						final File file = new File(plugin.getDataFolder() + File.separator + "userdata" + File.separator + split[1] + ".yml");
 						final FileConfiguration config = YamlConfiguration.loadConfiguration(file);
 						config.set(split[0] + ".Inventory", invString);
@@ -153,7 +154,9 @@ public class InventoryListener implements Listener {
 					if (curItem.isSimilar(plugin.backpackItems.get(backpack))) {
 						plugin.slowedPlayers.remove(name);
 						p.setWalkSpeed(0.2F);
-						e.setCurrentItem(RealisticBackpacks.NMS.addGlow(plugin.backpackItems.get(backpack)));
+						if (RealisticBackpacks.globalGlow && plugin.backpackData.get(backpack).get(17) != null && plugin.backpackData.get(backpack).get(17).equalsIgnoreCase("true")) {
+							e.setCurrentItem(RealisticBackpacks.NMS.addGlow(plugin.backpackItems.get(backpack)));
+						}
 						break;
 					}
 				}

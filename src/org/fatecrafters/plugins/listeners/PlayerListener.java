@@ -27,6 +27,7 @@ import org.bukkit.inventory.ItemStack;
 import org.fatecrafters.plugins.RealisticBackpacks;
 import org.fatecrafters.plugins.util.MysqlFunctions;
 import org.fatecrafters.plugins.util.RBUtil;
+import org.fatecrafters.plugins.util.Serialization;
 
 public class PlayerListener implements Listener {
 
@@ -103,16 +104,16 @@ public class PlayerListener implements Listener {
 							}
 						}
 						final FileConfiguration config = YamlConfiguration.loadConfiguration(file);
-						if (config.getString(backpack + ".Inventory") == null) {
+						if (config.getStringList(backpack + ".Inventory") == null) {
 							inv = plugin.getServer().createInventory(p, Integer.parseInt(key.get(0)), ChatColor.translateAlternateColorCodes('&', key.get(3)));
 						} else {
-							inv = RealisticBackpacks.NMS.stringToInventory(config.getString(backpack + ".Inventory"), key.get(3));
+							inv = Serialization.toInventory(config.getStringList(backpack + ".Inventory"), key.get(3), Integer.parseInt(key.get(0)));
 						}
 					}
-					plugin.playerData.put(name, backpack);
 					if (p.getOpenInventory().getTopInventory() != null) {
 						p.closeInventory();
 					}
+					plugin.playerData.put(name, backpack);
 					p.openInventory(inv);
 					break;
 				}
@@ -166,6 +167,9 @@ public class PlayerListener implements Listener {
 						@Override
 						public void run() {
 							p.setWalkSpeed(Float.parseFloat(key.get(9)));
+							if (RealisticBackpacks.globalGlow && plugin.backpackData.get(backpack).get(17) != null && plugin.backpackData.get(backpack).get(17).equalsIgnoreCase("true")) {
+								RealisticBackpacks.NMS.addGlow(item);
+							}
 						}
 					});
 					break;
@@ -257,10 +261,10 @@ public class PlayerListener implements Listener {
 						continue;
 					}
 					final FileConfiguration config = YamlConfiguration.loadConfiguration(file);
-					if (config.getString(backpack + ".Inventory") == null) {
+					if (config.getStringList(backpack + ".Inventory") == null) {
 						continue;
 					}
-					binv = RealisticBackpacks.NMS.stringToInventory(config.getString(backpack + ".Inventory"), key.get(3));
+					binv = Serialization.toInventory(config.getStringList(backpack + ".Inventory"), key.get(3), Integer.parseInt(key.get(0)));
 				}
 				if (plugin.playerData.containsKey(name)) {
 					if (p.getItemOnCursor() != null) {

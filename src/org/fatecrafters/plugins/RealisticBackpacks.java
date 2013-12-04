@@ -3,9 +3,16 @@ package org.fatecrafters.plugins;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Random;
 
 import net.milkbowl.vault.economy.Economy;
 
@@ -27,12 +34,14 @@ import org.fatecrafters.plugins.listeners.PlayerListener;
 import org.fatecrafters.plugins.metrics.MetricsLite;
 import org.fatecrafters.plugins.util.MysqlFunctions;
 import org.fatecrafters.plugins.util.RBUtil;
+import org.fatecrafters.plugins.util.Serialization;
 
 public class RealisticBackpacks extends JavaPlugin {
 
 	public static RBInterface NMS;
 
 	public static Economy econ = null;
+	public static boolean globalGlow = true;
 
 	private boolean usingMysql = false;
 	private boolean vault = true;
@@ -93,6 +102,8 @@ public class RealisticBackpacks extends JavaPlugin {
 			String classname = null;
 			if (version.contains("craftbukkit")) {
 				classname = getClass().getPackage().getName() + ".versions.preVersioning";
+				getLogger().severe("Glow effect will not work with this version of craftbukkit!");
+				globalGlow = false;
 			} else {
 				classname = getClass().getPackage().getName() + ".versions." + version;
 			}
@@ -103,11 +114,8 @@ public class RealisticBackpacks extends JavaPlugin {
 				NMS = (RBInterface) obj;
 			}
 		} catch (final Exception e) {
-			getLogger().severe("* ! * ! * !* ! * ! * ! * ! * !* ! * ! * ! *");
-			getLogger().severe("This version of craftbukkit is not supported, please contact the developer stating this version: " + version);
-			getLogger().severe("RealisticBackpacks will now disable.");
-			getLogger().severe("* ! * ! * !* ! * ! * ! * ! * !* ! * ! * ! *");
-			setEnabled(false);
+			getLogger().severe("Glow effect will not work with this version of craftbukkit!");
+			globalGlow = false;
 		}
 		if (isEnabled()) {
 			saveDefaultConfig();
@@ -148,10 +156,101 @@ public class RealisticBackpacks extends JavaPlugin {
 			reloadConfig();
 			setupLists();
 			final File userdata = new File(getDataFolder() + File.separator + "userdata");
+			setup();
+			boolean needsConvert = false;
+
+			//Convert old data to new format
+			if (!usingMysql) {
+				if (userdata.exists()) {
+					if (userdata.listFiles().length > 0) {
+						FileConfiguration fig = null;
+						do {
+							Random r = new Random();
+							File rFile = Arrays.asList(userdata.listFiles()).get(r.nextInt(userdata.listFiles().length));
+							fig = YamlConfiguration.loadConfiguration(rFile);
+						} while (fig.getConfigurationSection("") == null);
+						for (final String backpack : fig.getConfigurationSection("").getKeys(false)) {
+							if (!fig.isList(backpack + ".Inventory")) {
+								needsConvert = true;
+								break;
+							}
+						}
+						if (needsConvert) {
+							if (!version.equalsIgnoreCase("1_7_R1")) {
+								getLogger().info("------------Realistic Backpacks is now converting your data to the new format------------");
+								for (File file : userdata.listFiles()) {
+									fig = YamlConfiguration.loadConfiguration(file);
+									for (final String backpack : fig.getConfigurationSection("").getKeys(false)) {
+										if (fig.get(backpack + ".Inventory") != null && !fig.isList(backpack + ".Inventory")) {
+											fig.set(backpack + ".Inventory", Serialization.toString(NMS.stringToInventory(fig.getString(backpack + ".Inventory"), "Kappa")));
+										} else
+											continue;
+									}
+									try {
+										fig.save(file);
+									} catch (IOException e) {
+										e.printStackTrace();
+									}
+									getLogger().info(file.getName().replace(".yml", "") + "'s file has been converted");
+								}
+								getLogger().info("------------Realistic Backpacks has finished converting the user files to the new data format------------");
+							} else {
+								useLowerVersion();
+							}
+						}
+					}
+				}
+			} else {
+				try {
+					final Connection conn = DriverManager.getConnection(getUrl(), getUser(), getPass());
+					final Statement state = conn.createStatement();
+					final ResultSet res = state.executeQuery("SELECT inventory FROM rb_data ORDER BY RAND() LIMIT 10;");
+					while (res.next()) {
+						String invString = res.getString(1);
+						if (invString.length() > 15) {
+							if (!invString.contains("<->")) {
+								needsConvert = true;
+								break;
+							}
+						} else
+							continue;
+					}
+					state.close();
+					conn.close();
+				} catch (final SQLException e) {
+					e.printStackTrace();
+				}
+				if (needsConvert) {
+					if (!version.equalsIgnoreCase("1_7_R1")) {
+						getLogger().info("------------Realistic Backpacks is now converting your MySQL data to the new format------------");
+						try {
+							final Connection conn = DriverManager.getConnection(getUrl(), getUser(), getPass());
+							final Statement state = conn.createStatement();
+							final ResultSet res = state.executeQuery("SELECT * FROM rb_data;");
+							int total = 0;
+							while (res.next()) {
+								String inv = res.getString(3);
+								if (inv != null && !inv.contains("<->")) {
+									MysqlFunctions.addBackpackData(res.getString(1), res.getString(2), NMS.stringToInventory(inv, "Kappa"));
+									getLogger().info(total++ + " files have been converted!");
+								} else
+									continue;
+							}
+							state.close();
+							conn.close();
+						} catch (final SQLException e) {
+							e.printStackTrace();
+						}
+						getLogger().info("------------Realistic Backpacks has finished converting your MySQL data to the new data format------------");
+					} else {
+						useLowerVersion();
+					}
+				}
+			}
+
 			if (!userdata.exists()) {
 				userdata.mkdirs();
 			}
-			setup();
 			getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
 			getServer().getPluginManager().registerEvents(new CraftListener(this), this);
 			getServer().getPluginManager().registerEvents(new InventoryListener(this), this);
@@ -367,6 +466,15 @@ public class RealisticBackpacks extends JavaPlugin {
 		meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', key.get(3)));
 		item.setItemMeta(meta);
 		return item;
+	}
+
+	private void useLowerVersion() {
+		getLogger().severe("! * ! * ! * ! * ! * !");
+		getLogger().severe("You have the old data format, please run the plugin once in Minecraft version 1.6.4, or any version under 1.7.2");
+		getLogger().severe("This will automaticly convert all your data to the new format");
+		getLogger().severe("The plugin will not work until you do so");
+		getLogger().severe("! * ! * ! * ! * ! * !");
+		setEnabled(false);
 	}
 
 	public boolean isAveraging() {

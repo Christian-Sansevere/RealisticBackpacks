@@ -25,7 +25,7 @@ public class CraftListener implements Listener {
 		final ItemStack result = e.getInventory().getResult();
 		for (final String backpack : plugin.backpacks) {
 			if (plugin.backpackOverrides.get(backpack) != null && result.isSimilar(plugin.backpackOverrides.get(backpack))) {
-				if (plugin.backpackData.get(backpack).get(17).equalsIgnoreCase("true")) {
+				if (plugin.backpackData.get(backpack).get(17).equalsIgnoreCase("true") && RealisticBackpacks.globalGlow) {
 					e.getInventory().setResult(RealisticBackpacks.NMS.addGlow(plugin.backpackItems.get(backpack)));
 				} else {
 					e.getInventory().setResult(plugin.backpackItems.get(backpack));
@@ -48,7 +48,7 @@ public class CraftListener implements Listener {
 					((Player) human).sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("craftPermError")));
 					break;
 				}
-				if (plugin.backpackData.get(backpack).get(17).equalsIgnoreCase("true")) {
+				if (RealisticBackpacks.globalGlow && plugin.backpackData.get(backpack).get(17) != null && plugin.backpackData.get(backpack).get(17).equalsIgnoreCase("true")) {
 					e.getInventory().setResult(RealisticBackpacks.NMS.addGlow(plugin.backpackItems.get(backpack)));
 				}
 			}

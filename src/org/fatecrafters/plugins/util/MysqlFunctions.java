@@ -67,9 +67,9 @@ public class MysqlFunctions {
 					PreparedStatement state = null;
 					if (res.next()) {
 						if (res.getInt(1) == 1) {
-							state = conn.prepareStatement("UPDATE rb_data SET player='" + playerName + "', backpack='" + backpack + "', inventory='" + RealisticBackpacks.NMS.inventoryToString(inv) + "' WHERE player='" + playerName + "' AND backpack='" + backpack + "';");
+							state = conn.prepareStatement("UPDATE rb_data SET player='" + playerName + "', backpack='" + backpack + "', inventory='" + Serialization.listToString(Serialization.toString(inv)) + "' WHERE player='" + playerName + "' AND backpack='" + backpack + "';");
 						} else {
-							state = conn.prepareStatement("INSERT INTO rb_data (player, backpack, inventory) VALUES('" + playerName + "', '" + backpack + "', '" + RealisticBackpacks.NMS.inventoryToString(inv) + "' );");
+							state = conn.prepareStatement("INSERT INTO rb_data (player, backpack, inventory) VALUES('" + playerName + "', '" + backpack + "', '" + Serialization.listToString(Serialization.toString(inv)) + "' );");
 						}
 					}
 					state.executeUpdate();
@@ -91,7 +91,7 @@ public class MysqlFunctions {
 			if (res.next()) {
 				final String invString = res.getString(1);
 				if (invString != null) {
-					returnInv = RealisticBackpacks.NMS.stringToInventory(invString, ChatColor.translateAlternateColorCodes('&', plugin.backpackData.get(backpack).get(3)));
+					returnInv = Serialization.toInventory(Serialization.stringToList(invString), ChatColor.translateAlternateColorCodes('&', plugin.backpackData.get(backpack).get(3)), Integer.parseInt(plugin.backpackData.get(backpack).get(0)));
 				} else {
 					returnInv = null;
 				}

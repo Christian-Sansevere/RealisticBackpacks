@@ -18,6 +18,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.fatecrafters.plugins.util.MysqlFunctions;
+import org.fatecrafters.plugins.util.Serialization;
 
 public class MainCommand implements CommandExecutor {
 
@@ -92,7 +93,7 @@ public class MainCommand implements CommandExecutor {
 					final Inventory inv = p.getInventory();
 					if (inv.firstEmpty() != -1) {
 						RealisticBackpacks.econ.withdrawPlayer(p.getName(), price);
-						if (plugin.backpackData.get(backpack).get(17) != null && plugin.backpackData.get(backpack).get(17).equalsIgnoreCase("true")) {
+						if (RealisticBackpacks.globalGlow && plugin.backpackData.get(backpack).get(17) != null && plugin.backpackData.get(backpack).get(17).equalsIgnoreCase("true")) {
 							inv.addItem(RealisticBackpacks.NMS.addGlow(plugin.backpackItems.get(backpack)));
 						} else {
 							inv.addItem(plugin.backpackItems.get(backpack));
@@ -159,7 +160,7 @@ public class MainCommand implements CommandExecutor {
 					}
 					final Inventory inv = other.getInventory();
 					if (inv.firstEmpty() != -1) {
-						if (plugin.backpackData.get(backpack).get(17) != null && plugin.backpackData.get(backpack).get(17).equalsIgnoreCase("true")) {
+						if (RealisticBackpacks.globalGlow && plugin.backpackData.get(backpack).get(17) != null && plugin.backpackData.get(backpack).get(17).equalsIgnoreCase("true")) {
 							inv.addItem(RealisticBackpacks.NMS.addGlow(plugin.backpackItems.get(backpack)));
 						} else {
 							inv.addItem(plugin.backpackItems.get(backpack));
@@ -201,13 +202,13 @@ public class MainCommand implements CommandExecutor {
 											final ResultSet res = statement.executeQuery("SELECT EXISTS(SELECT 1 FROM rb_data WHERE player = '" + player + "' AND backpack = '" + backpack + "' LIMIT 1);");
 											if (res.next()) {
 												if (res.getInt(1) == 1) {
-													state = conn.prepareStatement("UPDATE rb_data SET player='" + player + "', backpack='" + backpack + "', inventory='" + config.getString(backpack + ".Inventory") + "' WHERE player='" + player + "' AND backpack='" + backpack + "';");
+													state = conn.prepareStatement("UPDATE rb_data SET player='" + player + "', backpack='" + backpack + "', inventory='" + Serialization.listToString(config.getStringList(backpack + ".Inventory")) + "' WHERE player='" + player + "' AND backpack='" + backpack + "';");
 												} else {
-													state = conn.prepareStatement("INSERT INTO rb_data (player, backpack, inventory) VALUES('" + player + "', '" + backpack + "', '" + config.getString(backpack + ".Inventory") + "' );");
+													state = conn.prepareStatement("INSERT INTO rb_data (player, backpack, inventory) VALUES('" + player + "', '" + backpack + "', '" + Serialization.listToString(config.getStringList(backpack + ".Inventory")) + "' );");
 												}
 											}
 										} else {
-											state = conn.prepareStatement("INSERT INTO rb_data (player, backpack, inventory) VALUES('" + player + "', '" + backpack + "', '" + config.getString(backpack + ".Inventory") + "' );");
+											state = conn.prepareStatement("INSERT INTO rb_data (player, backpack, inventory) VALUES('" + player + "', '" + backpack + "', '" + Serialization.listToString(config.getStringList(backpack + ".Inventory")) + "' );");
 										}
 										state.executeUpdate();
 										state.close();
@@ -275,10 +276,10 @@ public class MainCommand implements CommandExecutor {
 							return false;
 						}
 						final FileConfiguration config = YamlConfiguration.loadConfiguration(file);
-						if (config.getString(backpack + ".Inventory") == null) {
+						if (config.getStringList(backpack + ".Inventory") == null) {
 							inv = plugin.getServer().createInventory(p, Integer.parseInt(key.get(0)), ChatColor.translateAlternateColorCodes('&', fullName + "'s " + backpack + " data"));
 						} else {
-							inv = RealisticBackpacks.NMS.stringToInventory(config.getString(backpack + ".Inventory"), fullName + "'s " + backpack + " data");
+							inv = Serialization.toInventory(config.getStringList(backpack + ".Inventory"), fullName + "'s " + backpack + " data", Integer.parseInt(key.get(0)));
 						}
 					} else {
 						try {
