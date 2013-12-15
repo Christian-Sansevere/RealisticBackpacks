@@ -40,20 +40,15 @@ public class MysqlFunctions {
 	}
 
 	public static void createTables() {
-		plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
-			@Override
-			public void run() {
-				try {
-					final Connection conn = DriverManager.getConnection(plugin.getUrl(), plugin.getUser(), plugin.getPass());
-					final PreparedStatement state = conn.prepareStatement("CREATE TABLE rb_data (player VARCHAR(16), backpack VARCHAR(20), inventory TEXT);");
-					state.executeUpdate();
-					state.close();
-					conn.close();
-				} catch (final SQLException e) {
-					e.printStackTrace();
-				}
-			}
-		});
+		try {
+			final Connection conn = DriverManager.getConnection(plugin.getUrl(), plugin.getUser(), plugin.getPass());
+			final PreparedStatement state = conn.prepareStatement("CREATE TABLE rb_data (player VARCHAR(16), backpack VARCHAR(20), inventory TEXT);");
+			state.executeUpdate();
+			state.close();
+			conn.close();
+		} catch (final SQLException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public static void addBackpackData(final String playerName, final String backpack, final Inventory inv) throws SQLException {
@@ -67,9 +62,17 @@ public class MysqlFunctions {
 					PreparedStatement state = null;
 					if (res.next()) {
 						if (res.getInt(1) == 1) {
-							state = conn.prepareStatement("UPDATE rb_data SET player='" + playerName + "', backpack='" + backpack + "', inventory='" + Serialization.listToString(Serialization.toString(inv)) + "' WHERE player='" + playerName + "' AND backpack='" + backpack + "';");
+							state = conn.prepareStatement("UPDATE rb_data SET player=?, backpack=?, inventory=? WHERE player=? AND backpack=?;");
+							state.setString(1, playerName);
+							state.setString(2, backpack);
+							state.setString(3, Serialization.listToString(Serialization.toString(inv)));
+							state.setString(4, playerName);
+							state.setString(5, backpack);
 						} else {
-							state = conn.prepareStatement("INSERT INTO rb_data (player, backpack, inventory) VALUES('" + playerName + "', '" + backpack + "', '" + Serialization.listToString(Serialization.toString(inv)) + "' );");
+							state = conn.prepareStatement("INSERT INTO rb_data (player, backpack, inventory) VALUES(?, ?, ?);");
+							state.setString(1, playerName);
+							state.setString(2, backpack);
+							state.setString(3, Serialization.listToString(Serialization.toString(inv)));
 						}
 					}
 					state.executeUpdate();
@@ -86,8 +89,10 @@ public class MysqlFunctions {
 		Inventory returnInv = null;
 		try {
 			final Connection conn = DriverManager.getConnection(plugin.getUrl(), plugin.getUser(), plugin.getPass());
-			final Statement state = conn.createStatement();
-			final ResultSet res = state.executeQuery("SELECT inventory FROM rb_data WHERE player='" + playerName + "' AND backpack='" + backpack + "' LIMIT 1;");
+			final PreparedStatement state = conn.prepareStatement("SELECT inventory FROM rb_data WHERE player=? AND backpack=? LIMIT 1;");
+			state.setString(1, playerName);
+			state.setString(2, backpack);
+			final ResultSet res = state.executeQuery();
 			if (res.next()) {
 				final String invString = res.getString(1);
 				if (invString != null) {
@@ -110,7 +115,9 @@ public class MysqlFunctions {
 			public void run() {
 				try {
 					final Connection conn = DriverManager.getConnection(plugin.getUrl(), plugin.getUser(), plugin.getPass());
-					final PreparedStatement state = conn.prepareStatement("DELETE FROM rb_data WHERE player = '" + playerName + "' AND backpack = '" + backpack + "';");
+					final PreparedStatement state = conn.prepareStatement("DELETE FROM rb_data WHERE player = ? AND backpack = ?;");
+					state.setString(1, playerName);
+					state.setString(2, backpack);
 					state.executeUpdate();
 					state.close();
 					conn.close();
