@@ -64,11 +64,20 @@ public class RBUtil {
 		return i;
 	}
 
+	public static String stringToBackpack(String s) {
+		for (final String b : plugin.backpacks) {
+			if (b.equalsIgnoreCase(s)) {
+				return b;
+			}
+		}
+		return null;
+	}
+
 	public static ItemStack getItemstackFromString(final String s) {
 		ItemStack item = null;
 		final String[] split = s.split(":");
 		if (split.length == 1) {
-			item = new ItemStack(Material.getMaterial(Integer.parseInt(split[0])));
+			item = new ItemStack(Material.getMaterial(Integer.parseInt(split[0])), 1);
 		} else {
 			if (split[1].equalsIgnoreCase("enchant") || split[1].equalsIgnoreCase("lore") || split[1].equalsIgnoreCase("all")) {
 				item = new ItemStack(Material.getMaterial(Integer.parseInt(split[0])));
@@ -105,7 +114,7 @@ public class RBUtil {
 		return false;
 	}
 
-	public static boolean hasLore(ItemStack item) {
+	public static boolean hasLore(final ItemStack item) {
 		if (item.getItemMeta() != null) {
 			if (item.getItemMeta().hasDisplayName() || item.getItemMeta().hasLore()) {
 				return true;
@@ -114,11 +123,11 @@ public class RBUtil {
 		return false;
 	}
 
-	public static boolean itemsAreEqual(ItemStack item, final String s) {
-		boolean lore = hasLore(item);
-		boolean enchant = item.getEnchantments().size() >= 1;
-		boolean isLored = isLored(s);
-		boolean isEnchanted = isEnchanted(s);
+	public static boolean itemsAreEqual(final ItemStack item, final String s) {
+		final boolean lore = hasLore(item);
+		final boolean enchant = item.getEnchantments().size() >= 1;
+		final boolean isLored = isLored(s);
+		final boolean isEnchanted = isEnchanted(s);
 		if (item.isSimilar(getItemstackFromString(s)) && !isLored && !isEnchanted) {
 			return true;
 		} else if (item.getType() == getItemstackFromString(s).getType()) {
@@ -144,4 +153,5 @@ public class RBUtil {
 		}
 		return false;
 	}
+
 }
