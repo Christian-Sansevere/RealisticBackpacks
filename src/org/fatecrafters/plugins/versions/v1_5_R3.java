@@ -64,8 +64,8 @@ public class v1_5_R3 implements RBInterface {
 	}
 
 	@Override
-	public ItemStack addGlow(ItemStack item) {
-		net.minecraft.server.v1_5_R3.ItemStack handle = CraftItemStack.asNMSCopy(item);
+	public ItemStack addGlow(final ItemStack item) {
+		final net.minecraft.server.v1_5_R3.ItemStack handle = CraftItemStack.asNMSCopy(item);
 
 		if (handle == null) {
 			return item;
