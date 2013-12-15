@@ -97,25 +97,44 @@ public class InventoryListener implements Listener {
 
 			if (plugin.adminRestrictedView.contains(name)) {
 				e.setCancelled(true);
+				return;
 			}
 
-			final ItemStack curItem = e.getCurrentItem();
 			final Inventory otherInv = e.getView().getTopInventory();
+			final ItemStack curItem = e.getCurrentItem();
+			boolean otherInvPresent = false;
 
-			if (curItem != null && otherInv != null) {
+			if (otherInv != null)
+				otherInvPresent = true;
 
-				final boolean isInBackpack = plugin.playerData.containsKey(name);
-				final List<String> key = plugin.backpackData.get(plugin.playerData.get(name));
+			if (curItem != null && curItem.hasItemMeta()) {
+				for (final String backpack : plugin.backpacks) {
+					if (curItem.isSimilar(plugin.backpackItems.get(backpack))) {
+						plugin.slowedPlayers.remove(name);
+						p.setWalkSpeed(0.2F);
+						if (RealisticBackpacks.globalGlow && plugin.backpackData.get(backpack).get(17) != null && plugin.backpackData.get(backpack).get(17).equalsIgnoreCase("true")) {
+							e.setCurrentItem(RealisticBackpacks.NMS.addGlow(plugin.backpackItems.get(backpack)));
+						}
+						break;
+					}
+				}
+			}
 
-				if (isInBackpack) {
+			if (!e.isCancelled() && curItem != null && otherInvPresent) {
+
+				if (plugin.playerData.containsKey(name)) {
+
+					final String backpack = plugin.playerData.get(name);
+					final List<String> key = plugin.backpackData.get(backpack);
 
 					if (key.get(16) != null && key.get(16).equalsIgnoreCase("true") && p.getItemOnCursor().getType() == Material.AIR) {
-						for (final String whitelist : plugin.backpackWhitelist.get(plugin.playerData.get(name))) {
+						for (final String whitelist : plugin.backpackWhitelist.get(backpack)) {
 							if (whitelist == null) {
 								continue;
 							}
-							if (plugin.backpackItems.containsKey(whitelist)) {
-								if (!curItem.isSimilar(plugin.backpackItems.get(whitelist))) {
+							String potentialBackpack = RBUtil.stringToBackpack(whitelist);
+							if (potentialBackpack != null && plugin.backpackItems.containsKey(potentialBackpack)) {
+								if (!curItem.isSimilar(plugin.backpackItems.get(potentialBackpack))) {
 									e.setCancelled(true);
 									p.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("cantPutItemInBackpack")));
 									return;
@@ -130,12 +149,13 @@ public class InventoryListener implements Listener {
 						}
 					}
 
-					for (final String blacklist : plugin.backpackBlacklist.get(plugin.playerData.get(name))) {
+					for (final String blacklist : plugin.backpackBlacklist.get(backpack)) {
 						if (blacklist == null) {
 							continue;
 						}
-						if (plugin.backpackItems.containsKey(blacklist)) {
-							if (curItem.isSimilar(plugin.backpackItems.get(blacklist))) {
+						String potentialBackpack = RBUtil.stringToBackpack(blacklist);
+						if (potentialBackpack != null && plugin.backpackItems.containsKey(potentialBackpack)) {
+							if (curItem.isSimilar(plugin.backpackItems.get(potentialBackpack))) {
 								e.setCancelled(true);
 								p.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("cantPutItemInBackpack")));
 								return;
@@ -150,19 +170,44 @@ public class InventoryListener implements Listener {
 					}
 				}
 
-				for (final String backpack : plugin.backpacks) {
-					if (curItem.isSimilar(plugin.backpackItems.get(backpack))) {
-						plugin.slowedPlayers.remove(name);
-						p.setWalkSpeed(0.2F);
-						if (RealisticBackpacks.globalGlow && plugin.backpackData.get(backpack).get(17) != null && plugin.backpackData.get(backpack).get(17).equalsIgnoreCase("true")) {
-							e.setCurrentItem(RealisticBackpacks.NMS.addGlow(plugin.backpackItems.get(backpack)));
-						}
-						break;
-					}
-				}
-
 			}
+
+			/* Dupes
+			for (String backpack : plugin.backpackItems.keySet()) {
+				if (p.getInventory().contains(plugin.backpackItems.get(backpack))) {
+					plugin.getServer().getScheduler().runTaskLater(plugin, new Runnable() {
+						@Override
+						public void run() {
+							Location loc = p.getLocation();
+							World world = p.getWorld();
+							for (ItemStack item : p.getInventory().getContents()) {
+								if (item != null && item.hasItemMeta() && item.getAmount() > 1) {
+									for (String backpack : plugin.backpacks) {
+										String unstackable = plugin.backpackData.get(backpack).get(18);
+										if (unstackable == null || unstackable.equalsIgnoreCase("false")) {
+											continue;
+										}
+										if (item.isSimilar(plugin.backpackItems.get(backpack))) {
+											while (item.getAmount() > 1) {
+												item.setAmount(item.getAmount() - 1);
+												if (p.getInventory().firstEmpty() != -1) {
+													p.getInventory().setItem(p.getInventory().firstEmpty(), item);
+													p.updateInventory();
+												} else {
+													world.dropItemNaturally(loc, plugin.backpackItems.get(backpack));
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}, 2L);
+					break;
+				}
+			}
+			*/
+
 		}
 	}
-
 }

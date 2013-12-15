@@ -23,9 +23,13 @@ public class CraftListener implements Listener {
 	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
 	public void onPrepareCraft(final PrepareItemCraftEvent e) {
 		final ItemStack result = e.getInventory().getResult();
+		final HumanEntity human = e.getView().getPlayer();
+		if (!(human instanceof Player)) {
+			return;
+		}
 		for (final String backpack : plugin.backpacks) {
 			if (plugin.backpackOverrides.get(backpack) != null && result.isSimilar(plugin.backpackOverrides.get(backpack))) {
-				if (plugin.backpackData.get(backpack).get(17).equalsIgnoreCase("true") && RealisticBackpacks.globalGlow) {
+				if (RealisticBackpacks.globalGlow && plugin.backpackData.get(backpack).get(17) != null && plugin.backpackData.get(backpack).get(17).equalsIgnoreCase("true")) {
 					e.getInventory().setResult(RealisticBackpacks.NMS.addGlow(plugin.backpackItems.get(backpack)));
 				} else {
 					e.getInventory().setResult(plugin.backpackItems.get(backpack));
@@ -33,17 +37,13 @@ public class CraftListener implements Listener {
 				break;
 			}
 		}
-		if (!plugin.isUsingPerms()) {
-			return;
-		}
-		final HumanEntity human = e.getView().getPlayer();
-		if (result.hasItemMeta() && result.getItemMeta().hasDisplayName() && human instanceof Player) {
+		if (result.hasItemMeta() && result.getItemMeta().hasDisplayName()) {
 			for (final String backpack : plugin.backpacks) {
 				final List<String> key = plugin.backpackData.get(backpack);
 				if (!result.getItemMeta().getDisplayName().equals(ChatColor.translateAlternateColorCodes('&', key.get(3)))) {
 					continue;
 				}
-				if (!human.hasPermission("rb." + backpack + ".craft")) {
+				if (!human.hasPermission("rb." + backpack + ".craft") && plugin.isUsingPerms()) {
 					e.getInventory().setResult(null);
 					((Player) human).sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("craftPermError")));
 					break;

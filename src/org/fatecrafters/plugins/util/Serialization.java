@@ -27,17 +27,17 @@ import org.fatecrafters.plugins.json.JSONObject;
 public class Serialization {
 
 	@SuppressWarnings("unchecked")
-	public static Map<String, Object> toMap(JSONObject object) throws JSONException {
-		Map<String, Object> map = new HashMap<String, Object>();
-		Iterator<String> keys = object.keys();
+	public static Map<String, Object> toMap(final JSONObject object) throws JSONException {
+		final Map<String, Object> map = new HashMap<String, Object>();
+		final Iterator<String> keys = object.keys();
 		while (keys.hasNext()) {
-			String key = (String) keys.next();
+			final String key = keys.next();
 			map.put(key, fromJson(object.get(key)));
 		}
 		return map;
 	}
 
-	private static Object fromJson(Object json) throws JSONException {
+	private static Object fromJson(final Object json) throws JSONException {
 		if (json == JSONObject.NULL) {
 			return null;
 		} else if (json instanceof JSONObject) {
@@ -49,21 +49,21 @@ public class Serialization {
 		}
 	}
 
-	public static List<Object> toList(JSONArray array) throws JSONException {
-		List<Object> list = new ArrayList<Object>();
+	public static List<Object> toList(final JSONArray array) throws JSONException {
+		final List<Object> list = new ArrayList<Object>();
 		for (int i = 0; i < array.length(); i++) {
 			list.add(fromJson(array.get(i)));
 		}
 		return list;
 	}
 
-	public static List<String> stringToList(String listString) {
+	public static List<String> stringToList(final String listString) {
 		return Arrays.asList(listString.split("<->"));
 	}
 
-	public static String listToString(List<String> list) {
+	public static String listToString(final List<String> list) {
 		String newString = null;
-		for (String s : list) {
+		for (final String s : list) {
 			if (newString == null) {
 				newString = s;
 			} else {
@@ -73,13 +73,13 @@ public class Serialization {
 		return newString;
 	}
 
-	public static List<String> toString(Inventory inv) {
-		List<String> result = new ArrayList<String>();
-		List<ConfigurationSerializable> items = new ArrayList<ConfigurationSerializable>();
-		for (ItemStack is : inv.getContents()) {
+	public static List<String> toString(final Inventory inv) {
+		final List<String> result = new ArrayList<String>();
+		final List<ConfigurationSerializable> items = new ArrayList<ConfigurationSerializable>();
+		for (final ItemStack is : inv.getContents()) {
 			items.add(is);
 		}
-		for (ConfigurationSerializable cs : items) {
+		for (final ConfigurationSerializable cs : items) {
 			if (cs == null) {
 				result.add("null");
 			} else {
@@ -89,22 +89,22 @@ public class Serialization {
 		return result;
 	}
 
-	public static Inventory toInventory(List<String> stringItems, String name, int size) {
-		Inventory inv = Bukkit.createInventory(null, size, ChatColor.translateAlternateColorCodes('&', name));
-		List<ItemStack> contents = new ArrayList<ItemStack>();
-		for (String piece : stringItems) {
+	public static Inventory toInventory(final List<String> stringItems, final String name, final int size) {
+		final Inventory inv = Bukkit.createInventory(null, size, ChatColor.translateAlternateColorCodes('&', name));
+		final List<ItemStack> contents = new ArrayList<ItemStack>();
+		for (final String piece : stringItems) {
 			if (piece.equalsIgnoreCase("null")) {
 				contents.add(null);
 			} else {
 				try {
-					ItemStack item = (ItemStack) deserialize(toMap(new JSONObject(piece)));
+					final ItemStack item = (ItemStack) deserialize(toMap(new JSONObject(piece)));
 					contents.add(item);
-				} catch (JSONException e) {
+				} catch (final JSONException e) {
 					e.printStackTrace();
 				}
 			}
 		}
-		ItemStack[] items = new ItemStack[contents.size()];
+		final ItemStack[] items = new ItemStack[contents.size()];
 		for (int x = 0; x < contents.size(); x++) {
 			items[x] = contents.get(x);
 		}
@@ -112,9 +112,9 @@ public class Serialization {
 		return inv;
 	}
 
-	public static Map<String, Object> serialize(ConfigurationSerializable cs) {
-		Map<String, Object> serialized = recreateMap(cs.serialize());
-		for (Entry<String, Object> entry : serialized.entrySet()) {
+	public static Map<String, Object> serialize(final ConfigurationSerializable cs) {
+		final Map<String, Object> serialized = recreateMap(cs.serialize());
+		for (final Entry<String, Object> entry : serialized.entrySet()) {
 			if (entry.getValue() instanceof ConfigurationSerializable) {
 				entry.setValue(serialize((ConfigurationSerializable) entry.getValue()));
 			}
@@ -123,17 +123,17 @@ public class Serialization {
 		return serialized;
 	}
 
-	public static Map<String, Object> recreateMap(Map<String, Object> original) {
-		Map<String, Object> map = new HashMap<String, Object>();
-		for (Entry<String, Object> entry : original.entrySet()) {
+	public static Map<String, Object> recreateMap(final Map<String, Object> original) {
+		final Map<String, Object> map = new HashMap<String, Object>();
+		for (final Entry<String, Object> entry : original.entrySet()) {
 			map.put(entry.getKey(), entry.getValue());
 		}
 		return map;
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static ConfigurationSerializable deserialize(Map<String, Object> map) {
-		for (Entry<String, Object> entry : map.entrySet()) {
+	public static ConfigurationSerializable deserialize(final Map<String, Object> map) {
+		for (final Entry<String, Object> entry : map.entrySet()) {
 			if (entry.getValue() instanceof Map && ((Map) entry.getValue()).containsKey(ConfigurationSerialization.SERIALIZED_TYPE_KEY)) {
 				entry.setValue(deserialize((Map) entry.getValue()));
 			}

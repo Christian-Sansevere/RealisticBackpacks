@@ -17,7 +17,9 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 import org.fatecrafters.plugins.util.MysqlFunctions;
+import org.fatecrafters.plugins.util.RBUtil;
 import org.fatecrafters.plugins.util.Serialization;
 
 public class MainCommand implements CommandExecutor {
@@ -62,13 +64,9 @@ public class MainCommand implements CommandExecutor {
 						sender.sendMessage(ChatColor.RED + "Incorrect syntax. Please use:" + ChatColor.GRAY + " /rb buy <backpack>");
 						return false;
 					}
-					String backpack = args[1];
-					for (final String b : plugin.backpacks) {
-						if (b.equalsIgnoreCase(backpack)) {
-							backpack = b;
-						}
-					}
-					if (!plugin.backpacks.contains(backpack)) {
+					String backpack = null;
+					backpack = RBUtil.stringToBackpack(args[1]);
+					if (backpack == null) {
 						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("backpackDoesNotExist")));
 						return false;
 					}
@@ -86,17 +84,22 @@ public class MainCommand implements CommandExecutor {
 						return false;
 					}
 					final Player p = (Player) sender;
-					if (p.getInventory().contains(plugin.backpackItems.get(backpack))) {
-						sender.sendMessage(ChatColor.RED + "You already have this backpack on you!");
-						return false;
-					}
 					final Inventory inv = p.getInventory();
+					final ItemStack backpackItem = plugin.backpackItems.get(backpack);
 					if (inv.firstEmpty() != -1) {
 						RealisticBackpacks.econ.withdrawPlayer(p.getName(), price);
-						if (RealisticBackpacks.globalGlow && plugin.backpackData.get(backpack).get(17) != null && plugin.backpackData.get(backpack).get(17).equalsIgnoreCase("true")) {
-							inv.addItem(RealisticBackpacks.NMS.addGlow(plugin.backpackItems.get(backpack)));
+						if (plugin.backpackData.get(backpack).get(18) != null && plugin.backpackData.get(backpack).get(18).equalsIgnoreCase("true")) {
+							if (RealisticBackpacks.globalGlow && plugin.backpackData.get(backpack).get(17) != null && plugin.backpackData.get(backpack).get(17).equalsIgnoreCase("true")) {
+								inv.setItem(inv.firstEmpty(), RealisticBackpacks.NMS.addGlow(backpackItem));
+							} else {
+								inv.setItem(inv.firstEmpty(), backpackItem);
+							}
 						} else {
-							inv.addItem(plugin.backpackItems.get(backpack));
+							if (RealisticBackpacks.globalGlow && plugin.backpackData.get(backpack).get(17) != null && plugin.backpackData.get(backpack).get(17).equalsIgnoreCase("true")) {
+								inv.addItem(RealisticBackpacks.NMS.addGlow(backpackItem));
+							} else {
+								inv.addItem(backpackItem);
+							}
 						}
 						p.updateInventory();
 						sender.sendMessage(ChatColor.GREEN + "You have purchased the " + ChatColor.GOLD + backpack + ChatColor.GREEN + " backpack for " + ChatColor.GOLD + price);
@@ -139,17 +142,13 @@ public class MainCommand implements CommandExecutor {
 						sender.sendMessage(ChatColor.RED + "Incorrect syntax. Please use:" + ChatColor.GRAY + " /rb give <player> <backpack>");
 						return false;
 					}
-					String backpack = args[2];
-					for (final String b : plugin.backpacks) {
-						if (b.equalsIgnoreCase(backpack)) {
-							backpack = b;
-						}
-					}
+					String backpack = null;
+					backpack = RBUtil.stringToBackpack(args[2]);
 					if (plugin.isUsingPerms() && !sender.hasPermission("rb." + backpack + ".give")) {
 						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("noPermission")));
 						return false;
 					}
-					if (!plugin.backpacks.contains(backpack)) {
+					if (backpack == null) {
 						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("backpackDoesNotExist")));
 						return false;
 					}
@@ -159,17 +158,26 @@ public class MainCommand implements CommandExecutor {
 						return false;
 					}
 					final Inventory inv = other.getInventory();
+					final ItemStack backpackItem = plugin.backpackItems.get(backpack);
 					if (inv.firstEmpty() != -1) {
-						if (RealisticBackpacks.globalGlow && plugin.backpackData.get(backpack).get(17) != null && plugin.backpackData.get(backpack).get(17).equalsIgnoreCase("true")) {
-							inv.addItem(RealisticBackpacks.NMS.addGlow(plugin.backpackItems.get(backpack)));
+						if (plugin.backpackData.get(backpack).get(18) != null && plugin.backpackData.get(backpack).get(18).equalsIgnoreCase("true")) {
+							if (RealisticBackpacks.globalGlow && plugin.backpackData.get(backpack).get(17) != null && plugin.backpackData.get(backpack).get(17).equalsIgnoreCase("true")) {
+								inv.setItem(inv.firstEmpty(), RealisticBackpacks.NMS.addGlow(backpackItem));
+							} else {
+								inv.setItem(inv.firstEmpty(), backpackItem);
+							}
 						} else {
-							inv.addItem(plugin.backpackItems.get(backpack));
+							if (RealisticBackpacks.globalGlow && plugin.backpackData.get(backpack).get(17) != null && plugin.backpackData.get(backpack).get(17).equalsIgnoreCase("true")) {
+								inv.addItem(RealisticBackpacks.NMS.addGlow(backpackItem));
+							} else {
+								inv.addItem(backpackItem);
+							}
 						}
 						other.updateInventory();
 						sender.sendMessage(ChatColor.GREEN + "You have given the " + ChatColor.GOLD + backpack + ChatColor.GREEN + " backpack to " + ChatColor.GOLD + other.getName());
 						return true;
 					} else {
-						sender.sendMessage(ChatColor.RED + "Your inventory is full.");
+						sender.sendMessage(ChatColor.RED + other.getName() + "'s inventory is full.");
 						return false;
 					}
 				} else if (command.equalsIgnoreCase("filetomysql")) {
@@ -231,12 +239,8 @@ public class MainCommand implements CommandExecutor {
 						sender.sendMessage(ChatColor.RED + "Incorrect syntax. Please use:" + ChatColor.GRAY + " /rb view <player> <backpack>");
 						return false;
 					}
-					String backpack = args[2];
-					for (final String b : plugin.backpacks) {
-						if (b.equalsIgnoreCase(backpack)) {
-							backpack = b;
-						}
-					}
+					String backpack = null;
+					backpack = RBUtil.stringToBackpack(args[2]);
 					boolean fullview = false;
 					boolean restrictedview = false;
 					if (plugin.isUsingPerms() && sender.hasPermission("rb.fullview")) {
@@ -248,7 +252,7 @@ public class MainCommand implements CommandExecutor {
 						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("noPermission")));
 						return false;
 					}
-					if (!plugin.backpacks.contains(backpack)) {
+					if (backpack == null) {
 						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("backpackDoesNotExist")));
 						return false;
 					}
