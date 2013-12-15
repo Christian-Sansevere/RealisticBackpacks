@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -43,6 +44,10 @@ public class PlayerListener implements Listener {
 	@SuppressWarnings("deprecation")
 	@EventHandler(priority = EventPriority.HIGH)
 	public void onInteract(final PlayerInteractEvent e) {
+		if (e.getAction().equals(Action.PHYSICAL)) {
+			return;
+		}
+
 		final Action act = e.getAction();
 		final Player p = e.getPlayer();
 		final ItemStack item = p.getItemInHand();
@@ -152,30 +157,51 @@ public class PlayerListener implements Listener {
 		final ItemStack item = e.getItem().getItemStack();
 		final Player p = e.getPlayer();
 		final String name = p.getName();
-		plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
-			@Override
-			public void run() {
-				for (final String backpack : plugin.backpacks) {
-					if (!item.equals(plugin.backpackItems.get(backpack))) {
-						continue;
+		for (final String backpack : plugin.backpacks) {
+			if (!item.isSimilar(plugin.backpackItems.get(backpack))) {
+				continue;
+			}
+			final List<String> key = plugin.backpackData.get(backpack);
+			if (!plugin.slowedPlayers.contains(name)) {
+				plugin.slowedPlayers.add(name);
+			}
+			p.setWalkSpeed(Float.parseFloat(key.get(9)));
+			if (key.get(18) != null && key.get(18).equalsIgnoreCase("true")) {
+				final Inventory inv = p.getInventory();
+				final Location loc = e.getItem().getLocation();
+				final ItemStack backpackItem = plugin.backpackItems.get(backpack);
+				int emptySlots = 0, itemAmount = item.getAmount();
+				for (final ItemStack invItem : inv.getContents()) {
+					if (invItem == null) {
+						emptySlots++;
 					}
-					final List<String> key = plugin.backpackData.get(backpack);
-					if (!plugin.slowedPlayers.contains(name)) {
-						plugin.slowedPlayers.add(name);
+				}
+				if (emptySlots == 0) {
+					e.setCancelled(true);
+				} else {
+					e.getItem().remove();
+					e.setCancelled(true);
+					if (itemAmount > emptySlots) {
+						final ItemStack dropItem = backpackItem;
+						dropItem.setAmount(itemAmount - emptySlots);
+						p.getWorld().dropItem(loc, dropItem);
+						itemAmount = emptySlots;
 					}
-					plugin.getServer().getScheduler().runTask(plugin, new Runnable() {
-						@Override
-						public void run() {
-							p.setWalkSpeed(Float.parseFloat(key.get(9)));
-							if (RealisticBackpacks.globalGlow && plugin.backpackData.get(backpack).get(17) != null && plugin.backpackData.get(backpack).get(17).equalsIgnoreCase("true")) {
-								RealisticBackpacks.NMS.addGlow(item);
-							}
+					if (itemAmount == 1) {
+						backpackItem.setAmount(1);
+						inv.setItem(inv.firstEmpty(), backpackItem);
+					} else if (itemAmount > 1) {
+						int x = itemAmount;
+						backpackItem.setAmount(1);
+						while (x > 0) {
+							x--;
+							inv.setItem(inv.firstEmpty(), backpackItem);
 						}
-					});
-					break;
+					}
 				}
 			}
-		});
+			break;
+		}
 	}
 
 	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
@@ -220,9 +246,7 @@ public class PlayerListener implements Listener {
 							walkSpeedMultiplier = Collections.max(floatList);
 						}
 					} else if (listsize == 1) {
-						for (final String backpack : backpackList) {
-							walkSpeedMultiplier = Float.parseFloat(plugin.backpackData.get(backpack).get(9));
-						}
+						walkSpeedMultiplier = Float.parseFloat(plugin.backpackData.get(backpackList.get(0)).get(9));
 					}
 					plugin.slowedPlayers.add(name);
 					plugin.getServer().getScheduler().runTask(plugin, new Runnable() {
