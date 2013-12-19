@@ -6,7 +6,6 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.List;
 
 import org.bukkit.ChatColor;
@@ -203,28 +202,42 @@ public class MainCommand implements CommandExecutor {
 									final FileConfiguration config = YamlConfiguration.loadConfiguration(child);
 									final String player = child.getName().replace(".yml", "");
 									i++;
-									final Statement statement = conn.createStatement();
+									PreparedStatement statement = null;
 									PreparedStatement state = null;
 									for (final String backpack : config.getConfigurationSection("").getKeys(false)) {
 										if (exist) {
-											final ResultSet res = statement.executeQuery("SELECT EXISTS(SELECT 1 FROM rb_data WHERE player = '" + player + "' AND backpack = '" + backpack + "' LIMIT 1);");
+											statement = conn.prepareStatement("SELECT EXISTS(SELECT 1 FROM rb_data WHERE player = ? AND backpack = ? LIMIT 1);");
+											statement.setString(1, player);
+											statement.setString(2, backpack);
+											final ResultSet res = statement.executeQuery();
 											if (res.next()) {
 												if (res.getInt(1) == 1) {
-													state = conn.prepareStatement("UPDATE rb_data SET player='" + player + "', backpack='" + backpack + "', inventory='" + Serialization.listToString(config.getStringList(backpack + ".Inventory")) + "' WHERE player='" + player + "' AND backpack='" + backpack + "';");
+													state = conn.prepareStatement("UPDATE rb_data SET player=?, backpack=?, inventory=? WHERE player=? AND backpack=?;");
+													state.setString(1, player);
+													state.setString(2, backpack);
+													state.setString(3, Serialization.listToString(config.getStringList(backpack + ".Inventory")));
+													state.setString(4, player);
+													state.setString(5, backpack);
 												} else {
-													state = conn.prepareStatement("INSERT INTO rb_data (player, backpack, inventory) VALUES('" + player + "', '" + backpack + "', '" + Serialization.listToString(config.getStringList(backpack + ".Inventory")) + "' );");
+													state = conn.prepareStatement("INSERT INTO rb_data (player, backpack, inventory) VALUES(?, ?, ?);");
+													state.setString(1, player);
+													state.setString(2, backpack);
+													state.setString(3, Serialization.listToString(config.getStringList(backpack + ".Inventory")));
 												}
 											}
 										} else {
-											state = conn.prepareStatement("INSERT INTO rb_data (player, backpack, inventory) VALUES('" + player + "', '" + backpack + "', '" + Serialization.listToString(config.getStringList(backpack + ".Inventory")) + "' );");
+											state = conn.prepareStatement("INSERT INTO rb_data (player, backpack, inventory) VALUES(?, ?, ?);");
+											state.setString(1, player);
+											state.setString(2, backpack);
+											state.setString(3, Serialization.listToString(config.getStringList(backpack + ".Inventory")));
 										}
 										state.executeUpdate();
 										state.close();
 									}
-									if (i == 100) {
+									if (i == 50) {
 										i = 0;
 										times++;
-										sender.sendMessage(ChatColor.LIGHT_PURPLE + "" + times * 100 + "/" + files + " files have been transferred.");
+										sender.sendMessage(ChatColor.LIGHT_PURPLE + "" + times * 50 + "/" + files + " files have been transferred.");
 									}
 								}
 								conn.close();

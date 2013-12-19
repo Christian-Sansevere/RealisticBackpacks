@@ -57,8 +57,11 @@ public class MysqlFunctions {
 			public void run() {
 				try {
 					final Connection conn = DriverManager.getConnection(plugin.getUrl(), plugin.getUser(), plugin.getPass());
-					final Statement statement = conn.createStatement();
-					final ResultSet res = statement.executeQuery("SELECT EXISTS(SELECT 1 FROM rb_data WHERE player = '" + playerName + "' AND backpack = '" + backpack + "' LIMIT 1);");
+					PreparedStatement statement = null;
+					statement = conn.prepareStatement("SELECT EXISTS(SELECT 1 FROM rb_data WHERE player = ? AND backpack = ? LIMIT 1);");
+					statement.setString(1, playerName);
+					statement.setString(2, backpack);
+					final ResultSet res = statement.executeQuery();
 					PreparedStatement state = null;
 					if (res.next()) {
 						if (res.getInt(1) == 1) {
