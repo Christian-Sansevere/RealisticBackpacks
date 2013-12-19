@@ -109,7 +109,7 @@ public class PlayerListener implements Listener {
 							}
 						}
 						final FileConfiguration config = YamlConfiguration.loadConfiguration(file);
-						if (config.getStringList(backpack + ".Inventory") == null) {
+						if (!config.isSet(backpack + ".Inventory")) {
 							inv = plugin.getServer().createInventory(p, Integer.parseInt(key.get(0)), ChatColor.translateAlternateColorCodes('&', key.get(3)));
 						} else {
 							inv = Serialization.toInventory(config.getStringList(backpack + ".Inventory"), key.get(3), Integer.parseInt(key.get(0)));

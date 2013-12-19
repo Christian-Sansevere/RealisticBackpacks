@@ -24,7 +24,7 @@ public class CraftListener implements Listener {
 	public void onPrepareCraft(final PrepareItemCraftEvent e) {
 		final ItemStack result = e.getInventory().getResult();
 		final HumanEntity human = e.getView().getPlayer();
-		if (!(human instanceof Player)) {
+		if (!(human instanceof Player) || result == null) {
 			return;
 		}
 		for (final String backpack : plugin.backpacks) {
