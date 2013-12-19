@@ -128,7 +128,7 @@ public class RBUtil {
 		final boolean enchant = item.getEnchantments().size() >= 1;
 		final boolean isLored = isLored(s);
 		final boolean isEnchanted = isEnchanted(s);
-		if (item.isSimilar(getItemstackFromString(s)) && !isLored && !isEnchanted) {
+		if (!isLored && !isEnchanted && item.isSimilar(getItemstackFromString(s))) {
 			return true;
 		} else if (item.getType() == getItemstackFromString(s).getType()) {
 			if (enchant && !lore) {
