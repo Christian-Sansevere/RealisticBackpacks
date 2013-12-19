@@ -6,7 +6,6 @@ import java.sql.SQLException;
 import java.util.List;
 
 import org.bukkit.ChatColor;
-import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -107,14 +106,11 @@ public class InventoryListener implements Listener {
 			if (otherInv != null)
 				otherInvPresent = true;
 
-			if (curItem != null && curItem.hasItemMeta()) {
+			if (curItem != null && curItem.hasItemMeta() && curItem.getItemMeta().hasDisplayName()) {
 				for (final String backpack : plugin.backpacks) {
 					if (curItem.isSimilar(plugin.backpackItems.get(backpack))) {
 						plugin.slowedPlayers.remove(name);
 						p.setWalkSpeed(0.2F);
-						if (RealisticBackpacks.globalGlow && plugin.backpackData.get(backpack).get(17) != null && plugin.backpackData.get(backpack).get(17).equalsIgnoreCase("true")) {
-							e.setCurrentItem(RealisticBackpacks.NMS.addGlow(plugin.backpackItems.get(backpack)));
-						}
 						break;
 					}
 				}
@@ -126,26 +122,31 @@ public class InventoryListener implements Listener {
 
 					final String backpack = plugin.playerData.get(name);
 					final List<String> key = plugin.backpackData.get(backpack);
+					final ItemStack cursor = e.getCursor();
+					boolean go = true;
 
-					if (key.get(16) != null && key.get(16).equalsIgnoreCase("true") && p.getItemOnCursor().getType() == Material.AIR) {
+					if (key.get(16) != null && key.get(16).equalsIgnoreCase("true")) {
 						for (final String whitelist : plugin.backpackWhitelist.get(backpack)) {
 							if (whitelist == null) {
 								continue;
 							}
 							String potentialBackpack = RBUtil.stringToBackpack(whitelist);
 							if (potentialBackpack != null && plugin.backpackItems.containsKey(potentialBackpack)) {
-								if (!curItem.isSimilar(plugin.backpackItems.get(potentialBackpack))) {
-									e.setCancelled(true);
-									p.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("cantPutItemInBackpack")));
-									return;
+								if (curItem.isSimilar(plugin.backpackItems.get(potentialBackpack)) || cursor.isSimilar(plugin.backpackItems.get(potentialBackpack))) {
+									go = false;
+									break;
 								}
 							} else {
-								if (!RBUtil.itemsAreEqual(curItem, whitelist)) {
-									e.setCancelled(true);
-									p.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("cantPutItemInBackpack")));
-									return;
+								if (RBUtil.itemsAreEqual(curItem, whitelist) || RBUtil.itemsAreEqual(cursor, whitelist)) {
+									go = false;
+									break;
 								}
 							}
+						}
+						if (go) {
+							e.setCancelled(true);
+							p.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("cantPutItemInBackpack")));
+							return;
 						}
 					}
 
@@ -206,7 +207,7 @@ public class InventoryListener implements Listener {
 					break;
 				}
 			}
-			*/
+			 */
 
 		}
 	}
