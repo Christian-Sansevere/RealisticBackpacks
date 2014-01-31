@@ -127,25 +127,15 @@ public class PlayerListener implements Listener {
 		final Player p = e.getPlayer();
 		final String name = p.getName();
 		final ItemStack item = e.getItemDrop().getItemStack();
-		plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
-			@Override
-			public void run() {
-				if (plugin.slowedPlayers.contains(name)) {
-					for (final String backpack : plugin.backpacks) {
-						if (plugin.backpackItems.get(backpack).equals(item)) {
-							plugin.slowedPlayers.remove(name);
-							plugin.getServer().getScheduler().runTask(plugin, new Runnable() {
-								@Override
-								public void run() {
-									p.setWalkSpeed(0.2F);
-								}
-							});
-							break;
-						}
-					}
+		if (plugin.slowedPlayers.contains(name)) {
+			for (final String backpack : plugin.backpacks) {
+				if (plugin.backpackItems.get(backpack).equals(item)) {
+					plugin.slowedPlayers.remove(name);
+					p.setWalkSpeed(0.2F);
+					break;
 				}
 			}
-		});
+		}
 	}
 
 	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
