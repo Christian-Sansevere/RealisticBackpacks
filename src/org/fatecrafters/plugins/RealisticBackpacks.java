@@ -240,7 +240,7 @@ public class RealisticBackpacks extends JavaPlugin {
 							while (res.next()) {
 								final String inv = res.getString(3);
 								if (inv != null && !inv.contains("<->")) {
-									MysqlFunctions.addBackpackData(res.getString(1), res.getString(2), NMS.stringToInventory(inv, "Kappa"));
+									MysqlFunctions.addBackpackData(res.getString(1), res.getString(2), Serialization.toString(NMS.stringToInventory(inv, "Kappa")));
 									getLogger().info(total++ + " data entries have been converted!");
 								} else {
 									continue;
@@ -265,6 +265,7 @@ public class RealisticBackpacks extends JavaPlugin {
 				getServer().getPluginManager().registerEvents(new InventoryListener(this), this);
 				getServer().getPluginManager().registerEvents(new EntityListener(this), this);
 				getCommand("rb").setExecutor(new MainCommand(this));
+				getServer().getScheduler().runTaskTimer(this, new WalkSpeedRunnable(this), 20, 20);
 				getLogger().info("Realistic Backpacks has been enabled.");
 			}
 		}

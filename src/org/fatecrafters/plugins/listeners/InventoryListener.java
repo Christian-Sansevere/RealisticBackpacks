@@ -29,42 +29,45 @@ public class InventoryListener implements Listener {
 		this.plugin = plugin;
 	}
 
-	@EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onInventoryClose(final InventoryCloseEvent e) {
 		final String name = e.getPlayer().getName();
 		final Inventory inv = e.getView().getTopInventory();
-		if (plugin.playerData.containsKey(name)) {
+		final List<String> invString = Serialization.toString(inv);
+		final String backpack = plugin.playerData.get(name);
+		plugin.playerData.remove(name);
+		final String adminBackpack = plugin.adminFullView.get(name);
+		plugin.adminFullView.remove(name);
+		if (backpack != null) {
 			plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
 				@Override
 				public void run() {
 					if (plugin.isUsingMysql()) {
 						try {
-							MysqlFunctions.addBackpackData(name, plugin.playerData.get(name), inv);
+							MysqlFunctions.addBackpackData(name, backpack, invString);
 						} catch (final SQLException e) {
 							e.printStackTrace();
 						}
 					} else {
-						final List<String> invString = Serialization.toString(inv);
 						final File file = new File(plugin.getDataFolder() + File.separator + "userdata" + File.separator + name + ".yml");
 						final FileConfiguration config = YamlConfiguration.loadConfiguration(file);
-						config.set(plugin.playerData.get(name) + ".Inventory", invString);
+						config.set(backpack + ".Inventory", invString);
 						try {
 							config.save(file);
 						} catch (final IOException e) {
 							e.printStackTrace();
 						}
 					}
-					plugin.playerData.remove(name);
 				}
 			});
-		} else if (plugin.adminFullView.containsKey(name)) {
+		} else if (adminBackpack != null) {
 			plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
 				@Override
 				public void run() {
-					final String[] split = plugin.adminFullView.get(name).split(":");
+					final String[] split = adminBackpack.split(":");
 					if (plugin.isUsingMysql()) {
 						try {
-							MysqlFunctions.addBackpackData(split[0], split[1], inv);
+							MysqlFunctions.addBackpackData(split[0], split[1], invString);
 						} catch (final SQLException e) {
 							e.printStackTrace();
 						}
@@ -79,7 +82,6 @@ public class InventoryListener implements Listener {
 							e.printStackTrace();
 						}
 					}
-					plugin.adminFullView.remove(name);
 				}
 			});
 		} else if (plugin.adminRestrictedView.contains(name)) {
