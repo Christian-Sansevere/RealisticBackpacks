@@ -7,6 +7,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 
 import org.bukkit.ChatColor;
 import org.bukkit.inventory.Inventory;
@@ -51,14 +52,13 @@ public class MysqlFunctions {
 		}
 	}
 
-	public static void addBackpackData(final String playerName, final String backpack, final Inventory inv) throws SQLException {
+	public static void addBackpackData(final String playerName, final String backpack, final List<String> invString) throws SQLException {
 		plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
 			@Override
 			public void run() {
 				try {
 					final Connection conn = DriverManager.getConnection(plugin.getUrl(), plugin.getUser(), plugin.getPass());
-					PreparedStatement statement = null;
-					statement = conn.prepareStatement("SELECT EXISTS(SELECT 1 FROM rb_data WHERE player = ? AND backpack = ? LIMIT 1);");
+					PreparedStatement statement = conn.prepareStatement("SELECT EXISTS(SELECT 1 FROM rb_data WHERE player = ? AND backpack = ? LIMIT 1);");
 					statement.setString(1, playerName);
 					statement.setString(2, backpack);
 					final ResultSet res = statement.executeQuery();
@@ -68,14 +68,14 @@ public class MysqlFunctions {
 							state = conn.prepareStatement("UPDATE rb_data SET player=?, backpack=?, inventory=? WHERE player=? AND backpack=?;");
 							state.setString(1, playerName);
 							state.setString(2, backpack);
-							state.setString(3, Serialization.listToString(Serialization.toString(inv)));
+							state.setString(3, Serialization.listToString(invString));
 							state.setString(4, playerName);
 							state.setString(5, backpack);
 						} else {
 							state = conn.prepareStatement("INSERT INTO rb_data (player, backpack, inventory) VALUES(?, ?, ?);");
 							state.setString(1, playerName);
 							state.setString(2, backpack);
-							state.setString(3, Serialization.listToString(Serialization.toString(inv)));
+							state.setString(3, Serialization.listToString(invString));
 						}
 					}
 					state.executeUpdate();
