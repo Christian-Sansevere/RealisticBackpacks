@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -64,9 +63,7 @@ public class RealisticBackpacks extends JavaPlugin {
 	public HashMap<String, List<String>> backpackWhitelist = new HashMap<String, List<String>>();
 
 	public HashMap<String, String> playerData = new HashMap<String, String>();
-	public HashMap<String, Integer> playerData2 = new HashMap<String, Integer>();
 	public HashMap<String, String> adminFullView = new HashMap<String, String>();
-	public HashMap<String, Integer> adminFullView2 = new HashMap<String, Integer>();
 	public List<String> adminRestrictedView = new ArrayList<String>();
 	public List<String> slowedPlayers = new ArrayList<String>();
 
@@ -102,7 +99,6 @@ public class RealisticBackpacks extends JavaPlugin {
 		}
 		final String p = getServer().getClass().getPackage().getName();
 		final String version = p.substring(p.lastIndexOf('.') + 1);
-		playerData.get(1);
 		try {
 			String classname = null;
 			if (version.contains("craftbukkit")) {
@@ -166,9 +162,9 @@ public class RealisticBackpacks extends JavaPlugin {
 			setupLists();
 			final File userdata = new File(getDataFolder() + File.separator + "userdata");
 			setup();
+			boolean needsConvert = false;
 
-			//Convert old YAML format if found
-			boolean needsYamlConvert = false;
+			//Convert old data to new format
 			if (!usingMysql) {
 				if (userdata.exists()) {
 					if (userdata.listFiles().length > 0) {
@@ -179,84 +175,33 @@ public class RealisticBackpacks extends JavaPlugin {
 							fig = YamlConfiguration.loadConfiguration(rFile);
 						} while (fig.getConfigurationSection("") == null);
 						for (final String backpack : fig.getConfigurationSection("").getKeys(false)) {
-							if (fig.isSet(backpack + ".Inventory")) {
-								needsYamlConvert = true;
+							if (fig.getList(backpack + ".Inventory") != null && !fig.isList(backpack + ".Inventory")) {
+								needsConvert = true;
 								break;
 							}
 						}
-						if (needsYamlConvert) {
-							getLogger().info("---------Realistic Backpacks is now converting your old YAML formatting to the new one---------");
-							for (final File file : userdata.listFiles()) {
-								fig = YamlConfiguration.loadConfiguration(file);
-								for (final String backpack : fig.getConfigurationSection("").getKeys(false)) {
-									if (fig.isSet(backpack + ".Inventory")) {
-										if (fig.isList(backpack + ".Inventory")) {
-											fig.set(backpack + ".1.Inventory", fig.getList(backpack + ".Inventory"));
-										} else {
-											fig.set(backpack + ".1.Inventory", fig.getString(backpack + ".Inventory"));
-										}
-										fig.set(backpack + ".1.new", true);
-										fig.set(backpack + ".Inventory", null);
-									} else {
-										continue;
-									}
-								}
-								try {
-									fig.save(file);
-									getLogger().info(file.getName().replace(".yml", "") + "'s file has been converted");
-								} catch (final IOException e) {
-									getLogger().info("Error converting " + file.getName().replace(".yml", "") + "'s file");
-								}
-							}
-							getLogger().info("---------Realistic Backpacks has finished converting the old YAML formatting to the new one---------");
-						}
-					}
-				}
-			}
-
-			//Convert inventory storing format if old one found
-			boolean needsDataConvert = false;
-			if (!usingMysql) {
-				if (userdata.exists()) {
-					if (userdata.listFiles().length > 0) {
-						FileConfiguration fig = null;
-						do {
-							final Random r = new Random();
-							final File rFile = Arrays.asList(userdata.listFiles()).get(r.nextInt(userdata.listFiles().length));
-							fig = YamlConfiguration.loadConfiguration(rFile);
-						} while (fig.getConfigurationSection("") == null);
-						for (final String backpack : fig.getConfigurationSection("").getKeys(false)) {
-							for (final String number : fig.getConfigurationSection(backpack).getKeys(false)) {
-								if (fig.getList(backpack + "." + number + ".Inventory") != null && !fig.isList(backpack + "." + number + ".Inventory")) {
-									needsDataConvert = true;
-									break;
-								}
-							}
-						}
-						if (needsDataConvert) {
+						if (needsConvert) {
 							if (version.equalsIgnoreCase("v1_7_R1") || version.equalsIgnoreCase("v1_7_R2")) {
 								useLowerVersion();
 							} else {
-								getLogger().info("---------Realistic Backpacks is now converting your data to the new format---------");
+								getLogger().info("------------Realistic Backpacks is now converting your data to the new format------------");
 								for (final File file : userdata.listFiles()) {
 									fig = YamlConfiguration.loadConfiguration(file);
 									for (final String backpack : fig.getConfigurationSection("").getKeys(false)) {
-										for (final String number : fig.getConfigurationSection(backpack).getKeys(false)) {
-											if (fig.get(backpack + "." + number + ".Inventory") != null && !fig.isList(backpack + "." + number + ".Inventory")) {
-												fig.set(backpack + "." + number + ".Inventory", Serialization.toString(NMS.stringToInventory(fig.getString(backpack + ".Inventory"), "Kappa")));
-											} else {
-												continue;
-											}
+										if (fig.get(backpack + ".Inventory") != null && !fig.isList(backpack + ".Inventory")) {
+											fig.set(backpack + ".Inventory", Serialization.toString(NMS.stringToInventory(fig.getString(backpack + ".Inventory"), "Kappa")));
+										} else {
+											continue;
 										}
 									}
 									try {
 										fig.save(file);
-										getLogger().info(file.getName().replace(".yml", "") + "'s file has been converted");
 									} catch (final IOException e) {
-										getLogger().info("Error converting " + file.getName().replace(".yml", "") + "'s file");
+										e.printStackTrace();
 									}
+									getLogger().info(file.getName().replace(".yml", "") + "'s file has been converted");
 								}
-								getLogger().info("---------Realistic Backpacks has finished converting the user files to the new data format---------");
+								getLogger().info("------------Realistic Backpacks has finished converting the user files to the new data format------------");
 							}
 						}
 					}
@@ -270,7 +215,7 @@ public class RealisticBackpacks extends JavaPlugin {
 						final String invString = res.getString(1);
 						if (invString != null && invString.length() > 15) {
 							if (!invString.contains("<->")) {
-								needsDataConvert = true;
+								needsConvert = true;
 								break;
 							}
 						} else {
@@ -282,11 +227,11 @@ public class RealisticBackpacks extends JavaPlugin {
 				} catch (final SQLException e) {
 					e.printStackTrace();
 				}
-				if (needsDataConvert) {
+				if (needsConvert) {
 					if (version.equalsIgnoreCase("v1_7_R1") || version.equalsIgnoreCase("v1_7_R2")) {
 						useLowerVersion();
 					} else {
-						getLogger().info("---------Realistic Backpacks is now converting your MySQL data to the new format---------");
+						getLogger().info("------------Realistic Backpacks is now converting your MySQL data to the new format------------");
 						try {
 							final Connection conn = DriverManager.getConnection(getUrl(), getUser(), getPass());
 							final Statement state = conn.createStatement();
@@ -295,7 +240,7 @@ public class RealisticBackpacks extends JavaPlugin {
 							while (res.next()) {
 								final String inv = res.getString(3);
 								if (inv != null && !inv.contains("<->")) {
-									MysqlFunctions.addBackpackData(res.getString(1), res.getString(2), NMS.stringToInventory(inv, "Kappa"), res.getInt(4));
+									MysqlFunctions.addBackpackData(res.getString(1), res.getString(2), Serialization.toString(NMS.stringToInventory(inv, "Kappa")));
 									getLogger().info(total++ + " data entries have been converted!");
 								} else {
 									continue;
@@ -306,7 +251,7 @@ public class RealisticBackpacks extends JavaPlugin {
 						} catch (final SQLException e) {
 							e.printStackTrace();
 						}
-						getLogger().info("---------Realistic Backpacks has finished converting your MySQL data to the new data format---------");
+						getLogger().info("------------Realistic Backpacks has finished converting your MySQL data to the new data format------------");
 					}
 				}
 			}
@@ -320,6 +265,7 @@ public class RealisticBackpacks extends JavaPlugin {
 				getServer().getPluginManager().registerEvents(new InventoryListener(this), this);
 				getServer().getPluginManager().registerEvents(new EntityListener(this), this);
 				getCommand("rb").setExecutor(new MainCommand(this));
+				getServer().getScheduler().runTaskTimer(this, new WalkSpeedRunnable(this), 20, 20);
 				getLogger().info("Realistic Backpacks has been enabled.");
 			}
 		}
@@ -437,17 +383,6 @@ public class RealisticBackpacks extends JavaPlugin {
 			if (!MysqlFunctions.checkIfTableExists("rb_data")) {
 				MysqlFunctions.createTables();
 			}
-			if (!MysqlFunctions.checkIfColumnExists("rb_data", "number")) {
-				try {
-					final Connection conn = DriverManager.getConnection(getUrl(), getUser(), getPass());
-					final PreparedStatement state = conn.prepareStatement("ALTER TABLE rb_data ADD number INT NOT NULL DEFAULT(1)");
-					state.executeUpdate();
-					state.close();
-					conn.close();
-				} catch (SQLException e) {
-					e.printStackTrace();
-				}
-			}
 		} else {
 			usingMysql = false;
 		}
@@ -533,6 +468,7 @@ public class RealisticBackpacks extends JavaPlugin {
 		final List<String> key = backpackData.get(backpack);
 		final ItemMeta meta = item.getItemMeta();
 		final ArrayList<String> lore = new ArrayList<String>();
+		lore.clear();
 		if (backpackLore.get(backpack) != null) {
 			for (final String s : backpackLore.get(backpack)) {
 				lore.add(ChatColor.translateAlternateColorCodes('&', s));

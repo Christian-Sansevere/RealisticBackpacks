@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -21,12 +20,12 @@ public class RBUtil {
 		RBUtil.plugin = plugin;
 	}
 
-	public static void destroyContents(final String name, final String backpack, final int number) {
+	public static void destroyContents(final String name, final String backpack) {
 		plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
 			@Override
 			public void run() {
 				if (plugin.isUsingMysql()) {
-					MysqlFunctions.delete(name, backpack, number);
+					MysqlFunctions.delete(name, backpack);
 				} else {
 					final File file = new File(plugin.getDataFolder() + File.separator + "userdata" + File.separator + name + ".yml");
 					final FileConfiguration config = YamlConfiguration.loadConfiguration(file);
@@ -65,51 +64,6 @@ public class RBUtil {
 		return i;
 	}
 
-	public static int getNextNumber(FileConfiguration fig, String backpack) {
-		int i;
-		if (!(fig.getConfigurationSection(backpack).getKeys(false) == null)) {
-			ArrayList<Integer> list = new ArrayList<Integer>();
-			for (String s : fig.getConfigurationSection(backpack).getKeys(false)) {
-				list.add(Integer.parseInt(s));
-			}
-			Collections.sort(list);
-			i = list.get(list.size() - 1) + 1;
-		} else {
-			i = 1;
-		}
-		return i;
-	}
-
-	public static int getItemNumber(List<String> lore) {
-		int i = 0;
-		for (String s : lore) {
-			ChatColor.stripColor(s);
-			if (s.contains("BP#: ")) {
-				i = Integer.parseInt(s.replace("BP#: ", ""));
-			}
-		}
-		return i;
-	}
-
-	public static List<Integer> getNumbers(FileConfiguration fig, String backpack) {
-		ArrayList<Integer> list = new ArrayList<Integer>();
-		for (String s : fig.getConfigurationSection(backpack).getKeys(false)) {
-			list.add(Integer.parseInt(s));
-		}
-		return list;
-	}
-
-	public static String getItemOwner(List<String> lore) {
-		String str = null;
-		for (String s : lore) {
-			ChatColor.stripColor(s);
-			if (s.contains("BP-Owner: ")) {
-				s = s.replace("BP-Owner: ", "");
-			}
-		}
-		return str;
-	}
-
 	public static String stringToBackpack(String s) {
 		for (final String b : plugin.backpacks) {
 			if (b.equalsIgnoreCase(s)) {
@@ -132,15 +86,6 @@ public class RBUtil {
 			}
 		}
 		return item;
-	}
-
-	public static boolean stringIsInteger(String s) {
-		try {
-			Integer.parseInt(s);
-		} catch (NumberFormatException e) {
-			return false;
-		}
-		return true;
 	}
 
 	public static boolean isEnchanted(final String s) {
