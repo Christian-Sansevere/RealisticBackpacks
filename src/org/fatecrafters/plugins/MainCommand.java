@@ -205,34 +205,42 @@ public class MainCommand implements CommandExecutor {
 									PreparedStatement statement = null;
 									PreparedStatement state = null;
 									for (final String backpack : config.getConfigurationSection("").getKeys(false)) {
-										if (exist) {
-											statement = conn.prepareStatement("SELECT EXISTS(SELECT 1 FROM rb_data WHERE player = ? AND backpack = ? LIMIT 1);");
-											statement.setString(1, player);
-											statement.setString(2, backpack);
-											final ResultSet res = statement.executeQuery();
-											if (res.next()) {
-												if (res.getInt(1) == 1) {
-													state = conn.prepareStatement("UPDATE rb_data SET player=?, backpack=?, inventory=? WHERE player=? AND backpack=?;");
-													state.setString(1, player);
-													state.setString(2, backpack);
-													state.setString(3, Serialization.listToString(config.getStringList(backpack + ".Inventory")));
-													state.setString(4, player);
-													state.setString(5, backpack);
-												} else {
-													state = conn.prepareStatement("INSERT INTO rb_data (player, backpack, inventory) VALUES(?, ?, ?);");
-													state.setString(1, player);
-													state.setString(2, backpack);
-													state.setString(3, Serialization.listToString(config.getStringList(backpack + ".Inventory")));
+										for (final String number : config.getConfigurationSection(backpack).getKeys(false)) {
+											int pnumber = Integer.parseInt(number);
+											if (exist) {
+												statement = conn.prepareStatement("SELECT EXISTS(SELECT 1 FROM rb_data WHERE player = ? AND backpack = ? AND number = ? LIMIT 1);");
+												statement.setString(1, player);
+												statement.setString(2, backpack);
+												statement.setInt(3, Integer.parseInt(number));
+												final ResultSet res = statement.executeQuery();
+												if (res.next()) {
+													if (res.getInt(1) == 1) {
+														state = conn.prepareStatement("UPDATE rb_data SET player=?, backpack=?, inventory=? number=? WHERE player=? AND backpack=? AND number=?;");
+														state.setString(1, player);
+														state.setString(2, backpack);
+														state.setString(3, Serialization.listToString(config.getStringList(backpack + "." + pnumber + ".Inventory")));
+														state.setInt(4, pnumber);
+														state.setString(5, player);
+														state.setString(6, backpack);
+														state.setInt(7, pnumber);
+													} else {
+														state = conn.prepareStatement("INSERT INTO rb_data (player, backpack, inventory, number) VALUES(?, ?, ?, ?);");
+														state.setString(1, player);
+														state.setString(2, backpack);
+														state.setString(3, Serialization.listToString(config.getStringList(backpack + "." + pnumber + ".Inventory")));
+														state.setInt(4, pnumber);
+													}
 												}
+											} else {
+												state = conn.prepareStatement("INSERT INTO rb_data (player, backpack, inventory, number) VALUES(?, ?, ?, ?);");
+												state.setString(1, player);
+												state.setString(2, backpack);
+												state.setString(3, Serialization.listToString(config.getStringList(backpack + "." + pnumber + ".Inventory")));
+												state.setInt(4, pnumber);
 											}
-										} else {
-											state = conn.prepareStatement("INSERT INTO rb_data (player, backpack, inventory) VALUES(?, ?, ?);");
-											state.setString(1, player);
-											state.setString(2, backpack);
-											state.setString(3, Serialization.listToString(config.getStringList(backpack + ".Inventory")));
+											state.executeUpdate();
+											state.close();
 										}
-										state.executeUpdate();
-										state.close();
 									}
 									if (i == 50) {
 										i = 0;
@@ -248,8 +256,8 @@ public class MainCommand implements CommandExecutor {
 						}
 					});
 				} else if (command.equalsIgnoreCase("view")) {
-					if (!(args.length == 3)) {
-						sender.sendMessage(ChatColor.RED + "Incorrect syntax. Please use:" + ChatColor.GRAY + " /rb view <player> <backpack>");
+					if (!(args.length == 4)) {
+						sender.sendMessage(ChatColor.RED + "Incorrect syntax. Please use:" + ChatColor.GRAY + " /rb view <player> <backpack> <number>");
 						return false;
 					}
 					String backpack = null;
@@ -269,6 +277,11 @@ public class MainCommand implements CommandExecutor {
 						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("backpackDoesNotExist")));
 						return false;
 					}
+					if (!RBUtil.stringIsInteger(args[3])) {
+						sender.sendMessage(ChatColor.RED + "Number of backpack is not a integer in your syntax.");
+						return false;
+					}
+					int number = Integer.parseInt(args[3]);
 					Inventory inv = null;
 					String name = args[1];
 					final Player p = (Player) sender;
@@ -293,14 +306,15 @@ public class MainCommand implements CommandExecutor {
 							return false;
 						}
 						final FileConfiguration config = YamlConfiguration.loadConfiguration(file);
-						if (config.getStringList(backpack + ".Inventory") == null) {
-							inv = plugin.getServer().createInventory(p, Integer.parseInt(key.get(0)), ChatColor.translateAlternateColorCodes('&', fullName + "'s " + backpack + " data"));
+						if (!config.isSet(backpack + "." + number + ".Inventory")) {
+							sender.sendMessage(ChatColor.RED + "This player has never opened this backpack with flatfile data.");
+							return false;
 						} else {
-							inv = Serialization.toInventory(config.getStringList(backpack + ".Inventory"), fullName + "'s " + backpack + " data", Integer.parseInt(key.get(0)));
+							inv = Serialization.toInventory(config.getStringList(backpack + "." + number + ".Inventory"), fullName + "'s " + backpack + " data", Integer.parseInt(key.get(0)));
 						}
 					} else {
 						try {
-							inv = MysqlFunctions.getBackpackInv(name, backpack);
+							inv = MysqlFunctions.getBackpackInv(name, backpack, number);
 						} catch (final SQLException e1) {
 							e1.printStackTrace();
 						}
@@ -314,17 +328,62 @@ public class MainCommand implements CommandExecutor {
 						return false;
 					}
 					if (fullview || !plugin.isUsingPerms()) {
-						plugin.adminFullView.put(sender.getName(), backpack + ":" + name);
+						plugin.adminFullView.put(sender.getName(), backpack + ":" + name + ":" + number);
 					} else {
 						plugin.adminRestrictedView.add(sender.getName());
 					}
 					p.openInventory(inv);
+				} else if (command.equalsIgnoreCase("check")) {
+					if (!(args.length == 3)) {
+						sender.sendMessage(ChatColor.RED + "Incorrect syntax. Please use:" + ChatColor.GRAY + " /rb check <player> <backpack>");
+						return false;
+					}
+					String backpack = null, name = args[1];
+					backpack = RBUtil.stringToBackpack(args[2]);
+					if (plugin.isUsingPerms() && !sender.hasPermission("rb.check")) {
+						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("noPermission")));
+						return false;
+					}
+					if (backpack == null) {
+						sender.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.messageData.get("backpackDoesNotExist")));
+						return false;
+					}
+					Inventory inv = null;
+					sender.sendMessage(ChatColor.GRAY + "" + backpack + "'s information for " + name);
+					sender.sendMessage(ChatColor.BLUE + "BP-Number" + ChatColor.RESET + "  |  " + ChatColor.RED + "Number of items it contains");
+					sender.sendMessage(ChatColor.GRAY + "-----------------------------------");
+					if (!plugin.isUsingMysql()) {
+						final File file = new File(plugin.getDataFolder() + File.separator + "userdata" + File.separator + name + ".yml");
+						final FileConfiguration config = YamlConfiguration.loadConfiguration(file);
+						for (int number : RBUtil.getNumbers(config, backpack)) {
+							inv = Serialization.toInventory(config.getStringList(backpack + "." + number + ".Inventory"), "Kappa", Integer.parseInt(plugin.backpackData.get(backpack).get(0)));
+						}
+					} else {
+						for (int i : MysqlFunctions.getNumbers(name, backpack)) {
+							try {
+								inv = MysqlFunctions.getBackpackInv(name, backpack, i);
+							} catch (SQLException e) {
+								e.printStackTrace();
+							}
+							sender.sendMessage(ChatColor.BLUE + "" + i + ChatColor.RESET + "  |  " + ChatColor.RED + getItemAmount(inv.getContents()));
+						}
+					}
 				} else {
 					sender.sendMessage(ChatColor.RED + "Command not found.");
 				}
 			}
 		}
 		return false;
+	}
+
+	private int getItemAmount(ItemStack[] items) {
+		int i = 0;
+		for (ItemStack item : items) {
+			if (!(item == null)) {
+				i++;
+			}
+		}
+		return i;
 	}
 
 }
